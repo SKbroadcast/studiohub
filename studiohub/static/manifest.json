@@ -1,0 +1,31 @@
+{
+  "name": "StudioHub — Event Studios x Freelance Crew",
+  "short_name": "StudioHub",
+  "description": "Event studios post events and the crew they need. Freelance photographers & videographers mark their free dates and get booked.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050b20",
+  "theme_color": "#0a1128",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

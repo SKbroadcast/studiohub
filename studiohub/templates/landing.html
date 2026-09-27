@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Login / Register{% endblock %}
+{% block content %}
+<section class="hero">
+  <img src="{{ url_for('static', filename='icons/logo-full.png') }}" alt="StudioHub"
+       style="height:150px;width:auto;margin-bottom:.8rem">
+  <h1>Event studios meet freelance <em>photographers</em> & <em>videographers</em></h1>
+  <p class="sub">Studios post events and the crew they need. Freelancers mark the dates they are free. Both sides match & book — simple.</p>
+  <div class="hero-points">
+    <div>🎬 Studios: post your event, see who is free that day, book them</div>
+    <div>📅 Freelancers: mark your free dates, see matching events, apply</div>
+    <div>🤝 Traditional & candid photographers/videographers — all in one place</div>
+  </div>
+</section>
+
+<section class="auth-grid">
+  <div class="card auth-card">
+    <h2>Log in</h2>
+    <form method="post" action="{{ url_for('login') }}">
+      <label>Email or mobile number
+        <input type="text" name="email" required placeholder="you@example.com or 98XXXXXXXX">
+      </label>
+      <label>Password
+        <input type="password" name="password" required placeholder="••••••">
+      </label>
+      <button class="btn btn-primary btn-block" type="submit">Log in</button>
+    </form>
+  </div>
+
+  <div class="card auth-card">
+    <h2>Create account</h2>
+    <form method="post" action="{{ url_for('register') }}">
+      <div class="role-toggle">
+        <label class="role-opt">
+          <input type="radio" name="role" value="studio" checked onchange="toggleReg(this.value)">
+          <span>🏢 I'm a <b>Studio</b></span>
+        </label>
+        <label class="role-opt">
+          <input type="radio" name="role" value="freelancer" onchange="toggleReg(this.value)">
+          <span>📷 I'm a <b>Freelancer</b></span>
+        </label>
+      </div>
+
+      <label>Full name / Studio name
+        <input type="text" name="name" required placeholder="e.g. Krishna Studio or Santhosh K">
+      </label>
+      <label>Email
+        <input type="email" name="email" required placeholder="you@example.com">
+      </label>
+      <label>Phone (WhatsApp)
+        <input type="tel" name="phone" placeholder="98XXXXXXXX">
+      </label>
+      <label>Password
+        <input type="password" name="password" required minlength="6" placeholder="At least 6 characters">
+      </label>
+
+      <div id="freelancer-fields" style="display:none">
+        <label>My skills <span class="hint">(pick all that apply)</span></label>
+        <div class="skill-grid">
+          <label class="check"><input type="checkbox" name="skills" value="trad_photographer"> Traditional Photographer</label>
+          <label class="check"><input type="checkbox" name="skills" value="trad_videographer"> Traditional Videographer</label>
+          <label class="check"><input type="checkbox" name="skills" value="candid_photographer"> Candid Photographer</label>
+          <label class="check"><input type="checkbox" name="skills" value="candid_videographer"> Candid Videographer</label>
+        </div>
+        <label>Rate per day (₹)
+          <input type="number" name="rate" min="0" placeholder="e.g. 8000">
+        </label>
+        <label>City
+          <input type="text" name="city" placeholder="e.g. Coimbatore">
+        </label>
+        <label>About me / my work
+          <textarea name="bio" rows="2" placeholder="5 years experience, weddings & receptions…"></textarea>
+        </label>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Create account</button>
+    </form>
+  </div>
+</section>
+
+<section class="auth-grid">
+  <div class="card auth-card" style="grid-column:span 2;text-align:center">
+    <p class="hint"><a href="{{ url_for('admin_page') }}">🛡 Admin login →</a></p>
+  </div>
+</section>
+{% endblock %}

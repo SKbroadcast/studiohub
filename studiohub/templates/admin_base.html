@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — StudioHub</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/icons/icon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
+<meta name="theme-color" content="#0a1128">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;margin-bottom:1.2rem}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center}
+.stat b{display:block;font-size:1.6rem;color:var(--accent2)}
+.stat span{color:var(--muted);font-size:.8rem}
+table.admin-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.admin-table th{text-align:left;color:var(--muted);font-size:.75rem;text-transform:uppercase;padding:.5rem .6rem;border-bottom:1px solid var(--border)}
+.admin-table td{padding:.55rem .6rem;border-bottom:1px solid var(--border);vertical-align:top}
+.admin-table tr:hover td{background:var(--bg2)}
+select{background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.4rem .5rem;font-size:.85rem}
+</style>
+</head>
+<body>
+{% include "admin_nav.html" %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  <div class="flashes">
+  {% for cat, msg in messages %}
+    <div class="flash flash-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+  </div>
+{% endwith %}
+<main class="container">
+{% block admincontent %}{% endblock %}
+</main>
+</body>
+</html>

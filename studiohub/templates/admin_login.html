@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — StudioHub</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/icons/icon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
+<meta name="theme-color" content="#0a1128">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main class="container" style="max-width:420px;margin-top:8vh">
+  <div class="hero" style="padding:1rem 0">
+    <h1><img src="/static/icons/icon-48.png" alt="StudioHub" style="height:1.1em;vertical-align:-0.2em;border-radius:5px"> Studio<span style="color:var(--accent)">Hub</span> Admin</h1>
+    <p class="sub" style="margin-bottom:1rem">Super admin control panel</p>
+  </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  <div class="card">
+    <form method="post" action="{{ url_for('admin_login') }}">
+      <label>Admin username
+        <input type="text" name="username" required placeholder="admin" autofocus>
+      </label>
+      <label>Password
+        <input type="password" name="password" required>
+      </label>
+      <button class="btn btn-primary btn-block" type="submit">Admin login</button>
+    </form>
+    <p class="hint" style="margin-top:1rem">Default login: <b>admin / admin123</b> — change it in Settings after first login.</p>
+  </div>
+  <div class="footer-note" style="text-align:center">
+    <a href="{{ url_for('landing') }}">← Back to main site</a>
+  </div>
+</main>
+</body>
+</html>

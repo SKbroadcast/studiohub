@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>My profile</h1>
+    <p>Keep your skills and rate fresh — studios see these when picking crew.</p>
+  </div>
+</section>
+
+<div class="card" style="max-width:640px">
+  <form method="post" action="{{ url_for('freelancer_profile_edit') }}">
+    <label>Full name
+      <input type="text" value="{{ user['name'] }}" disabled>
+    </label>
+    <label>Phone (WhatsApp)
+      <input type="tel" name="phone" value="{{ user['phone'] or '' }}" placeholder="98XXXXXXXX">
+    </label>
+    <label>My skills *</label>
+    <div class="skill-grid">
+      {% for key, label in ROLES.items() %}
+        <label class="check">
+          <input type="checkbox" name="skills" value="{{ key }}" {{ 'checked' if key in my_skills }}> {{ label }}
+        </label>
+      {% endfor %}
+    </div>
+    <div class="form-row">
+      <label>Rate per day (₹)
+        <input type="number" name="rate" min="0" value="{{ profile['rate'] if profile else 0 }}">
+      </label>
+      <label>City
+        <input type="text" name="city" value="{{ profile['city'] if profile else '' }}" placeholder="e.g. Madurai">
+      </label>
+    </div>
+    <label>About me / my work
+      <textarea name="bio" rows="3" placeholder="5 years experience, weddings & receptions…">{{ profile['bio'] if profile else '' }}</textarea>
+    </label>
+    <button class="btn btn-primary" type="submit">Save profile</button>
+  </form>
+</div>
+{% endblock %}
