@@ -5,8 +5,9 @@
 <section class="page-head">
   <div>
     <h1>Vanakkam, {{ user['name'] }} 👋</h1>
-    <p>Your events and crew — create an event from the menu (➕ Create event) anytime.</p>
+    <p>Post an event with the crew you need — freelancers free on those dates will see it instantly.</p>
   </div>
+  <a class="btn btn-cta" href="#post">➕ Create event</a>
 </section>
 
 <div class="card">
@@ -50,7 +51,7 @@
         </div>
       {% endfor %}
       <div class="event-actions">
-        <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">View free freelancers →</a>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">Find available freelancers →</a>
         {% if ev['status'] == 'open' %}
           <form method="post" action="{{ url_for('respond') }}" class="inline"
                 onsubmit="return confirm('Close this event? No new applications can come in.')">
@@ -64,7 +65,7 @@
 </div>
 
 <div class="card" id="post">
-  <h2>➕ Create event</h2>
+  <h2>➕ Post a new event</h2>
   <form method="post" action="{{ url_for('post_event') }}" class="post-form">
     <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr">
       <label>Event name *

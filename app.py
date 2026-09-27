@@ -752,20 +752,12 @@ def apply():
 @app.route("/schedule-notes")
 @login_required
 def schedule_notes():
-    """Date-wise schedule: freelancer = app-booked events; studio = own events."""
+    """Events booked through StudioHub, date-wise (freelancer view)."""
     u = current_user()
+    if u["role"] != "freelancer":
+        return redirect(url_for("studio_home"))
     db = get_db()
     today = TODAY().isoformat()
-    if u["role"] == "studio":
-        events = []
-        for r in db.execute(
-                "SELECT * FROM events WHERE studio_id = ? ORDER BY event_date",
-                (u["id"],)).fetchall():
-            events.append(event_with_roles(r))
-        upcoming = [e for e in events if e["event_date"] >= today]
-        past = [e for e in events if e["event_date"] < today]
-        return render_template("schedule_notes.html", user=u,
-                               upcoming=upcoming, past=past, studio_view=True)
     items = []
     for b in db.execute(
             """SELECT b.id, b.role_key, b.advance_amount, b.advance_paid,

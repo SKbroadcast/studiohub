@@ -27,6 +27,21 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>👤 My profile</h2>
+      {% if profile %}
+        <div class="badges">
+          {% for s in profile['skills'].strip(',').split(',') if s %}
+            <span class="badge">{{ role_label(s) }}</span>
+          {% endfor %}
+        </div>
+        <p>Rate: <b>₹{{ profile['rate'] or '—' }}</b> per day{% if profile['city'] %} · {{ profile['city'] }}{% endif %}</p>
+        {% if profile['bio'] %}<p class="hint">{{ profile['bio'] }}</p>{% endif %}
+        <a class="btn btn-outline btn-sm" href="{{ url_for('freelancer_profile_edit') }}">Edit profile</a>
+      {% else %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('freelancer_profile_edit') }}">Complete my profile</a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="dash-col wide">

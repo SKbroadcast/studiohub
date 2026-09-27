@@ -139,9 +139,3 @@ running on your own computer.
 - Note events: manual outside bookings (show as booked in My Availability; tap booked date for details)
 - Events page filters: date, skill, district
 - New theme: deep navy / electric blue / studio orange / cyan, Inter + Noto Sans Tamil
-
-## v12
-- Studio: one "Create event" (duplicate "Post a new event" removed)
-- Studio menu now has Schedule notes (own events, date-wise, with crew status)
-- "View free freelancers" buttons on studio home & schedule notes
-- Freelancer home: My profile card removed (Profile stays in the 3-dot menu)
