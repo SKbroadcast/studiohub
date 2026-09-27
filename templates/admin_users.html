@@ -1,0 +1,32 @@
+{% extends "admin_base.html" %}
+{% block admincontent %}
+<div class="page-head"><h1>👥 Users <span class="count-chip">{{ users|length }}</span></h1>
+<p>Edit or delete any account</p></div>
+
+<div class="card">
+  {% if not users %}
+    <div class="empty">No users yet.</div>
+  {% else %}
+  <div style="overflow-x:auto">
+  <table class="admin-table">
+    <tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Skills / Rate</th><th></th></tr>
+    {% for u in users %}
+    <tr>
+      <td><b>{{ u.name }}</b></td>
+      <td><span class="badge {% if u.role == 'studio' %}badge-role{% else %}badge-wait{% endif %}">{{ u.role }}</span></td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.phone or '—' }}</td>
+      <td>
+        {% if u.role == 'freelancer' %}
+          {% for s in u.skills %}<span class="badge badge-role">{{ role_label(s) }}</span> {% endfor %}
+          ₹{{ u.rate }}/day
+        {% else %}—{% endif %}
+      </td>
+      <td><a class="btn btn-outline btn-sm" href="{{ url_for('admin_user_edit', user_id=u.id) }}">Edit</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ ev['title'] }}{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <h1>{{ ev['title'] }}</h1>
+    <p>📅 {{ ev['event_date'] }} · 📍 {{ ev['location'] or 'location TBD' }} · 🏢 {{ ev['studio_name'] }}</p>
+    {% if ev['details'] %}<p class="hint">{{ ev['details'] }}</p>{% endif %}
+    <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
+  </div>
+</section>
+
+<div class="card">
+  <h2>Crew needed</h2>
+  {% for role in ev['roles'] %}
+    <div class="match-row">
+      <span class="badge badge-role">{{ role['label'] }}</span>
+      {% if user['role'] == 'freelancer' %}
+        {% set mine = my_statuses.get(role['role_key']) %}
+        {% if mine == 'booked' %}
+          <span class="badge badge-ok">✓ You are booked</span>
+        {% elif mine == 'applied' %}
+          <span class="badge badge-wait">Applied — waiting for studio</span>
+        {% elif mine == 'invited' %}
+          <span class="badge badge-hot">Studio invited you — accept from your dashboard</span>
+        {% elif mine in ('declined', 'cancelled') %}
+          <span class="badge badge-dim">{{ mine|capitalize }}</span>
+        {% elif role['role_key'] in my_skills and role['filled'] %}
+          <span class="badge badge-dim">Filled</span>
+        {% elif role['role_key'] in my_skills %}
+          {% if ev['status'] == 'open' %}
+            <form method="post" action="{{ url_for('apply') }}" class="inline">
+              <input type="hidden" name="event_id" value="{{ ev['id'] }}">
+              <input type="hidden" name="role_key" value="{{ role['role_key'] }}">
+              <button class="btn btn-primary btn-sm">Apply</button>
+            </form>
+          {% else %}
+            <span class="badge badge-dim">Event closed</span>
+          {% endif %}
+        {% else %}
+          <span class="hint">not your skill</span>
+        {% endif %}
+      {% else %}
+        {% if role['filled'] %}<span class="badge badge-ok">✓ Booked</span>
+        {% else %}<span class="badge badge-wait">Open</span>{% endif %}
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  {% if user['role'] == 'freelancer' %}
+    <div class="empty" style="margin-top:1rem">
+      To apply, the event date must be in your availability. Applying marks that date free automatically.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

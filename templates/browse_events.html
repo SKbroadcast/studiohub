@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}All Events{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Upcoming events</h1>
+    <p>All open studio events. Freelancers: apply where you match.</p>
+  </div>
+</section>
+
+<div class="card">
+  {% if not events %}
+    <div class="empty">No upcoming events.</div>
+  {% endif %}
+  {% for ev in events %}
+    <div class="event-card">
+      <div class="event-head">
+        <div>
+          <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
+          <div class="event-meta">🏢 {{ ev['studio_name'] }} · 📍 {{ ev['location'] or 'location TBD' }}
+            {% if user['role'] == 'studio' and ev['studio_id'] == user['id'] %} · <b>your event</b>{% endif %}
+          </div>
+        </div>
+        <div class="date-chip"><b>{{ ev['event_date'] }}</b></div>
+      </div>
+      <div class="badges">
+        {% for role in ev['roles'] %}
+          <span class="badge badge-role">{{ role['label'] }}</span>
+          {% if role['filled'] %}<span class="badge badge-ok">✓</span>
+          {% elif user['role'] == 'freelancer' %}<span class="badge badge-wait">open</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

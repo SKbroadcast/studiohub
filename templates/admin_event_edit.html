@@ -1,0 +1,43 @@
+{% extends "admin_base.html" %}
+{% block admincontent %}
+<div class="page-head"><h1>✏️ Edit event</h1><p>Posted by {{ ev.studio_id }} · created {{ ev.created_at }}</p></div>
+
+<div class="card" style="max-width:640px">
+  <form method="post" action="{{ url_for('admin_event_edit', event_id=ev.id) }}">
+    <div class="form-row">
+      <label>Event name
+        <input type="text" name="title" value="{{ ev.title }}" required>
+      </label>
+      <label>Date
+        <input type="date" name="event_date" value="{{ ev.event_date }}" required>
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Location
+        <input type="text" name="location" value="{{ ev.location or '' }}">
+      </label>
+      <label>Status
+        <select name="status">
+          <option value="open" {{ 'selected' if ev.status == 'open' }}>open</option>
+          <option value="closed" {{ 'selected' if ev.status == 'closed' }}>closed</option>
+        </select>
+      </label>
+    </div>
+    <label>Details
+      <textarea name="details" rows="2">{{ ev.details or '' }}</textarea>
+    </label>
+    <label>Crew needed <span class="hint">(roles with bookings cannot be removed)</span></label>
+    <div class="skill-grid">
+      {% for key, label in ROLES.items() %}
+      <label class="check"><input type="checkbox" name="roles" value="{{ key }}" {{ 'checked' if key in current_roles }}> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <button class="btn btn-primary" type="submit" name="action" value="save">Save changes</button>
+      <button class="btn btn-ghost" type="submit" name="action" value="delete"
+              onclick="return confirm('Delete this event and all its bookings? This cannot be undone.')"
+              style="color:var(--hot)">Delete event</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

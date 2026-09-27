@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block admincontent %}
+<div class="page-head"><h1>⚙️ Admin settings</h1><p>Change the super admin login</p></div>
+
+<div class="card" style="max-width:520px">
+  <form method="post" action="{{ url_for('admin_settings') }}">
+    <label>Current admin password
+      <input type="password" name="current_password" required>
+    </label>
+    <label>New admin username
+      <input type="text" name="username" value="{{ admin_username }}" required>
+    </label>
+    <label>New password <span class="hint">(blank = keep current)</span>
+      <input type="password" name="new_password" placeholder="Min 6 characters">
+    </label>
+    <label>Confirm new password
+      <input type="password" name="confirm_password">
+    </label>
+    <button class="btn btn-primary" type="submit">Save admin login</button>
+  </form>
+  <p class="hint" style="margin-top:1rem">You are still using the default password if you never changed it — please change it soon.</p>
+</div>
+{% endblock %}
