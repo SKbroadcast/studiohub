@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ fr['name'] }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>{{ fr['name'] }}</h1>
+    <p>
+      {% if profile and profile['skills'] %}
+        {% for s in profile['skills'].strip(',').split(',') if s %}
+          <span class="badge badge-role">{{ role_label(s) }}</span>
+        {% endfor %}
+      {% endif %}
+      · ₹{{ profile['rate'] or '—' }}/day{% if profile['city'] %} · 📍 {{ profile['city'] }}{% endif %}
+      {% if rating_count %} · <b>{{ stars_str(avg) }}</b> {{ avg }} ({{ rating_count }}){% endif %}
+    </p>
+    {% if profile and profile['bio'] %}<p class="hint">{{ profile['bio'] }}</p>{% endif %}
+  </div>
+</section>
+
+<div class="dash-grid">
+<div class="dash-col wide">
+  <div class="card">
+    <h2>🖼 Portfolio <span class="count-chip">{{ photos|length }}</span></h2>
+    {% if photos %}
+    <div class="gallery">
+      {% for p in photos %}
+      <div class="gallery-item">
+        <img src="{{ url_for('portfolio_photo', photo_id=p['id']) }}" alt="{{ p['caption'] or 'portfolio' }}">
+        {% if p['caption'] %}<span class="gallery-cap">{{ p['caption'] }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">No photos in the portfolio yet.</div>
+    {% endif %}
+  </div>
+</div>
+<div class="dash-col">
+  <div class="card">
+    <h2>⭐ Reviews</h2>
+    {% if reviews %}
+      <p style="font-size:1.1rem"><b>{{ stars_str(avg) }}</b> {{ avg }} · {{ rating_count }} review{{ '' if rating_count == 1 else 's' }}</p>
+      {% for r in reviews %}
+      <div class="notif-row" style="display:block">
+        <b>{{ stars_str(r['stars']) }}</b> <span class="hint">{{ r['stars'] }}/5</span>
+        <span class="event-meta">by {{ r['studio_name'] }} · {{ r['created_at'] }}</span>
+        {% if r['comment'] %}<div class="event-meta" style="margin-top:.2rem">“{{ r['comment'] }}”</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No reviews yet.</div>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% endblock %}

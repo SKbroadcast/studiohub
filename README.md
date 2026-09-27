@@ -90,3 +90,58 @@ Separate admin login at **`/admin`** (also linked from the landing page).
 
 Admin accounts are stored in the `admins` table; the default one is seeded
 automatically on first run. Existing databases are upgraded automatically.
+
+### Forgot the admin login?
+
+- **On your computer:** in the app folder run:
+  `python app.py resetadmin`
+  This resets to username `admin` / password `admin123`. Log in and change it in Settings.
+- **On Render (hosted):** Dashboard → your service → **Environment** → add
+  `ADMIN_USERNAME` and `ADMIN_PASSWORD` env vars → Save. The service restarts and
+  those become the admin login. After logging in, you can delete those env vars
+  (otherwise they override the stored password on every restart).
+
+## v3 features
+
+- **Multi-day events** — post events with a start and end date. Matching, conflict
+  checks and the availability lock all respect the full date range.
+- **Portfolio gallery** — freelancers upload up to 8 photos (auto-compressed).
+  Studios view them on the freelancer's public profile (`/u/<id>`).
+- **Ratings & reviews** — studios rate confirmed bookings (1-5 stars + review).
+  Averages show everywhere freelancers are listed.
+- **Advance payments (UPI)** — freelancers add a UPI ID; the event page shows a
+  "Pay via UPI" deep link (opens any UPI app with amount prefilled) and the studio
+  can mark the advance as paid. The freelancer is notified.
+- **Security** — users can change their own password; 5 wrong logins locks the
+  account for 5 minutes.
+- **Admin reports** — bookings per month, top freelancers, top studios, role demand.
+
+## PostgreSQL (data survives restarts on Render)
+
+1. Render dashboard → **New +** → **Postgres** → create (free plan)
+2. Open the Postgres service → **Connections** → copy the **Internal Database URL**
+3. Open the StudioHub web service → **Environment** → add env var:
+   `DATABASE_URL` = that URL → Save (service restarts)
+4. All tables are created automatically on first start.
+
+Without `DATABASE_URL` the app uses local SQLite (`studiohub.db`) — perfect for
+running on your own computer.
+
+
+## v11
+- Tagline: "Book Your Wedding Crew in Minutes"
+- Social links on home page (set them in Admin -> Settings)
+- Admin login only via /admin URL
+- Role renamed: "Drone Pilot"
+- 3-dot menu (studio: Create event / My events / Profile / Logout; freelancer: Schedule notes / Note events / Events / Profile / Logout), notification bell stays outside
+- Studio home: My events first, then post form; all 7 crew roles; district dropdown (TN districts)
+- Schedule notes: app-booked events, date-wise
+- Note events: manual outside bookings (show as booked in My Availability; tap booked date for details)
+- Events page filters: date, skill, district
+- New theme: deep navy / electric blue / studio orange / cyan, Inter + Noto Sans Tamil
+
+## v12
+- Studio: one "Create event" (duplicate "Post a new event" removed)
+- Studio menu now has Schedule notes (own events, date-wise, with crew status)
+- "View free freelancers" buttons on studio home & schedule notes
+- Freelancer home: My profile card removed (Profile stays in the 3-dot menu)

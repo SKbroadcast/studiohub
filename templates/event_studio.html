@@ -5,7 +5,7 @@
 <section class="page-head">
   <div>
     <h1>{{ ev['title'] }}</h1>
-    <p>📅 {{ ev['event_date'] }} · 📍 {{ ev['location'] or 'location TBD' }} · 🏢 {{ ev['studio_name'] }}</p>
+    <p>📅 {{ event_date_str(ev) }} · 📍 {{ ev['location'] or 'location TBD' }} · 🏢 {{ ev['studio_name'] }}</p>
     {% if ev['details'] %}<p class="hint">{{ ev['details'] }}</p>{% endif %}
     <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
   </div>
@@ -13,86 +13,149 @@
 
 <div class="card">
   <h2>Crew needed & available freelancers</h2>
-  <p class="hint">Only freelancers who marked themselves free on {{ ev['event_date'] }} are listed below.</p>
+  <p class="hint">Only freelancers free on all dates of this event are listed.</p>
   {% for role in ev['roles'] %}
     <div class="role-block">
       <h3>
         <span class="badge badge-role">{{ role['label'] }}</span>
         {% if role['filled'] %}
-          {% for b in role['bookings'] if b['status'] == 'booked' %}
-            <span class="badge badge-ok">✓ Booked: {{ b['freelancer_name'] }}</span>
-          {% endfor %}
-          <div class="role-bookings">
-            {% for b in role['bookings'] if b['status'] == 'booked' %}
-              <div class="booking-row ok">
-                <div><b>{{ b['freelancer_name'] }}</b> · ₹{{ b['rate'] or '—' }}/day
-                  <div class="event-meta">Contact the studio in your bookings page.</div>
-                </div>
-                <form method="post" action="{{ url_for('respond') }}" class="inline"
-                      onsubmit="return confirm('Cancel this booking?')">
-                  <input type="hidden" name="booking_id" value="{{ b['id'] }}">
-                  <button class="btn btn-ghost btn-sm" name="action" value="cancel">Cancel</button>
-                </form>
-              </div>
-            {% endfor %}
-          </div>
+          <span class="badge badge-ok">✓ Booked</span>
         {% else %}
           <span class="badge badge-wait">Open</span>
         {% endif %}
       </h3>
 
+      {% for b in role['bookings'] if b['status'] == 'booked' %}
+        <div class="booking-row ok">
+          <div>
+            <b><a href="{{ url_for('public_profile', user_id=b['freelancer_id']) }}" style="color:var(--text);text-decoration:none">{{ b['freelancer_name'] }} ↗</a></b>
+            · ₹{{ b['rate'] or '—' }}/day
+            <div class="event-meta">📞 {{ b['freelancer_phone'] or '—' }}{% if b['upi_id'] %} · UPI: {{ b['upi_id'] }}{% endif %}</div>
+          </div>
+          <div class="booking-actions">
+            {% if b['advance_amount'] and b['advance_paid'] %}
+              <span class="badge badge-ok">Advance ₹{{ b['advance_amount'] }} paid ✓</span>
+            {% elif b['advance_amount'] %}
+              <span class="badge badge-wait">Advance ₹{{ b['advance_amount'] }} pending</span>
+            {% endif %}
+            <form method="post" action="{{ url_for('respond') }}"
+                  onsubmit="return confirm('Cancel this booking?')">
+              <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+              <button class="btn btn-ghost btn-sm" name="action" value="cancel">Cancel</button>
+            </form>
+          </div>
+        </div>
+
+        {# ---- advance payment panel ---- #}
+        <div class="advance-panel">
+          <form method="post" action="{{ url_for('advance') }}" class="inline" style="display:inline-flex;gap:.4rem;flex-wrap:wrap;align-items:end">
+            <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+            <label style="margin:0">Advance ₹
+              <input type="number" name="amount" min="0" value="{{ b['advance_amount'] or '' }}" placeholder="0" style="width:110px">
+            </label>
+            <button class="btn btn-outline btn-sm" name="action" value="set">Save</button>
+            {% if b['advance_amount'] and not b['advance_paid'] %}
+              {% if b['upi_id'] %}
+                <a class="btn btn-primary btn-sm" style="text-decoration:none"
+                   href="upi://pay?pa={{ b['upi_id'] }}&pn={{ b['freelancer_name'] }}&am={{ b['advance_amount'] }}&cu=INR&tn=StudioHub {{ ev['title'] }}">📱 Pay via UPI</a>
+              {% endif %}
+              <button class="btn btn-outline btn-sm" name="action" value="paid">Mark advance paid</button>
+            {% endif %}
+          </form>
+          {% if not b['upi_id'] and not b['advance_paid'] %}
+            <p class="hint" style="margin-top:.3rem">Freelancer has not added a UPI ID yet — pay cash and mark it paid.</p>
+          {% endif %}
+        </div>
+
+        {# ---- rating panel ---- #}
+        {% if b['rating'] %}
+          <div class="notif-row" style="display:block;margin-bottom:.4rem">
+            <b>{{ stars_str(b['rating']) }}</b> <span class="hint">{{ b['rating'] }}/5</span>
+            {% if b['rating_comment'] %}<div class="event-meta">“{{ b['rating_comment'] }}”</div>{% endif %}
+          </div>
+        {% else %}
+          <form method="post" action="{{ url_for('rate') }}" class="rate-panel">
+            <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+            <label style="margin:0;display:inline-flex;align-items:center;gap:.4rem">Rate this freelancer:
+              <select name="stars" style="width:auto">
+                <option value="5">★★★★★ 5</option>
+                <option value="4">★★★★ 4</option>
+                <option value="3">★★★ 3</option>
+                <option value="2">★★ 2</option>
+                <option value="1">★ 1</option>
+              </select>
+            </label>
+            <input type="text" name="comment" maxlength="300" placeholder="Optional review…" style="width:auto;flex:1;min-width:140px;margin:0">
+            <button class="btn btn-outline btn-sm" type="submit">Save rating</button>
+          </form>
+        {% endif %}
+      {% endfor %}
+
       {% if not role['filled'] %}
         {% set pending = role['bookings'] | selectattr('status', 'in', ['invited']) | list %}
-        {% if pending %}
-          <div class="role-bookings">
-            {% for b in pending %}
-              <div class="booking-row">
-                <div>⏳ Invited: <b>{{ b['freelancer_name'] }}</b> — waiting for reply</div>
-              </div>
-            {% endfor %}
+        {% for b in pending %}
+          <div class="booking-row">
+            <div>⏳ Invited: <b>{{ b['freelancer_name'] }}</b> — waiting for reply</div>
           </div>
-        {% endif %}
+        {% endfor %}
+        {% set applied = role['bookings'] | selectattr('status', 'in', ['applied']) | list %}
+        {% for b in applied %}
+          <div class="cand-row">
+            <div><b>{{ b['freelancer_name'] }}</b> <span class="badge badge-role">applied</span>
+              <div class="event-meta">₹{{ b['rate'] or '—' }}/day · 📞 {{ b['freelancer_phone'] or '—' }}{% if b['rcount'] %} · {{ stars_str(b['avg']) }} {{ b['avg'] }}{% endif %}</div>
+            </div>
+            <div class="booking-actions">
+              <form method="post" action="{{ url_for('respond') }}" class="inline">
+                <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                <button class="btn btn-primary btn-sm" name="action" value="accept">Book</button>
+              </form>
+              <form method="post" action="{{ url_for('respond') }}" class="inline">
+                <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                <button class="btn btn-ghost btn-sm" name="action" value="decline">✕</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
 
-        {% if role['candidates'] %}
-          {% for c in role['candidates'] %}
-            <div class="cand-row">
-              <div class="cand-info">
-                <b>{{ c['name'] }}</b>
-                <span class="hint">₹{{ c['rate'] or '—' }}/day{% if c['city'] %} · {{ c['city'] }}{% endif %} · 📞 {{ c['phone'] or '—' }}</span>
-                {% if c['bio'] %}<div class="hint">{{ c['bio'] }}</div>{% endif %}
-              </div>
-              <div class="booking-actions">
-                {% if c['busy'] %}
-                  <span class="badge badge-dim">Already booked that day</span>
-                {% elif c['existing'] %}
-                  {% if c['existing']['status'] == 'applied' %}
-                    <span class="badge badge-wait">Applied — book from My Events page</span>
-                  {% elif c['existing']['status'] == 'invited' %}
-                    <span class="badge badge-wait">Invited already</span>
-                  {% elif c['existing']['status'] == 'declined' %}
-                    <form method="post" action="{{ url_for('invite') }}" class="inline">
-                      <input type="hidden" name="event_id" value="{{ ev['id'] }}">
-                      <input type="hidden" name="role_key" value="{{ role['role_key'] }}">
-                      <input type="hidden" name="freelancer_id" value="{{ c['id'] }}">
-                      <button class="btn btn-primary btn-sm">Invite again</button>
-                    </form>
-                    <span class="badge badge-dim">Declined before</span>
-                  {% else %}
-                    <span class="badge badge-dim">{{ c['existing']['status']|capitalize }}</span>
-                  {% endif %}
-                {% else %}
+        {% for c in role['candidates'] %}
+          <div class="cand-row">
+            <div>
+              <b><a href="{{ url_for('public_profile', user_id=c['id']) }}" style="color:var(--text);text-decoration:none">{{ c['name'] }} ↗</a></b>
+              <span class="hint">₹{{ c['rate'] or '—' }}/day{% if c['city'] %} · {{ c['city'] }}{% endif %} · 📞 {{ c['phone'] or '—' }}{% if c['rcount'] %} · {{ stars_str(c['avg']) }} {{ c['avg'] }}{% endif %}</span>
+              {% if c['bio'] %}<div class="hint">{{ c['bio'] }}</div>{% endif %}
+            </div>
+            <div class="booking-actions">
+              {% if c['busy'] %}
+                <span class="badge badge-dim">Already booked in this period</span>
+              {% elif c['existing'] %}
+                {% if c['existing']['status'] == 'applied' %}
+                  <span class="badge badge-wait">Applied — book above ↑</span>
+                {% elif c['existing']['status'] == 'invited' %}
+                  <span class="badge badge-wait">Invited already</span>
+                {% elif c['existing']['status'] == 'declined' %}
                   <form method="post" action="{{ url_for('invite') }}" class="inline">
                     <input type="hidden" name="event_id" value="{{ ev['id'] }}">
                     <input type="hidden" name="role_key" value="{{ role['role_key'] }}">
                     <input type="hidden" name="freelancer_id" value="{{ c['id'] }}">
-                    <button class="btn btn-primary btn-sm">Send booking request</button>
+                    <button class="btn btn-primary btn-sm">Invite again</button>
                   </form>
+                  <span class="badge badge-dim">Declined before</span>
+                {% else %}
+                  <span class="badge badge-dim">{{ c['existing']['status']|capitalize }}</span>
                 {% endif %}
-              </div>
+              {% else %}
+                <form method="post" action="{{ url_for('invite') }}" class="inline">
+                  <input type="hidden" name="event_id" value="{{ ev['id'] }}">
+                  <input type="hidden" name="role_key" value="{{ role['role_key'] }}">
+                  <input type="hidden" name="freelancer_id" value="{{ c['id'] }}">
+                  <button class="btn btn-primary btn-sm">Send booking request</button>
+                </form>
+              {% endif %}
             </div>
-          {% endfor %}
-        {% else %}
-          <div class="empty">No freelancers free on this date yet. Check back — new freelancers mark dates daily.</div>
+          </div>
+        {% endfor %}
+        {% if not role['candidates'] and not applied %}
+          <div class="empty">No freelancers free on these dates yet. Check back — new freelancers mark dates daily.</div>
         {% endif %}
       {% endif %}
     </div>

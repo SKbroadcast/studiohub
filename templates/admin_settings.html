@@ -1,8 +1,30 @@
 {% extends "admin_base.html" %}
 {% block admincontent %}
-<div class="page-head"><h1>⚙️ Admin settings</h1><p>Change the super admin login</p></div>
+<div class="page-head"><h1>⚙️ Admin settings</h1><p>Site settings & the super admin login</p></div>
+
+<div class="card" style="max-width:560px">
+  <h2>Social media links</h2>
+  <p class="hint">These show as icons on the home page. Leave a field empty to hide that icon.</p>
+  <form method="post" action="{{ url_for('admin_settings') }}">
+    <input type="hidden" name="action" value="social">
+    <label>Instagram URL
+      <input type="text" name="social_instagram" value="{{ social.social_instagram }}" placeholder="https://instagram.com/yourstudio">
+    </label>
+    <label>YouTube URL
+      <input type="text" name="social_youtube" value="{{ social.social_youtube }}" placeholder="https://youtube.com/@yourstudio">
+    </label>
+    <label>Facebook URL
+      <input type="text" name="social_facebook" value="{{ social.social_facebook }}" placeholder="https://facebook.com/yourstudio">
+    </label>
+    <label>X (Twitter) URL
+      <input type="text" name="social_x" value="{{ social.social_x }}" placeholder="https://x.com/yourstudio">
+    </label>
+    <button class="btn btn-primary" type="submit">Save social links</button>
+  </form>
+</div>
 
 <div class="card" style="max-width:520px">
+  <h2>Admin login</h2>
   <form method="post" action="{{ url_for('admin_settings') }}">
     <label>Current admin password
       <input type="password" name="current_password" required>

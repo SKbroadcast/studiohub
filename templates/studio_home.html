@@ -5,55 +5,25 @@
 <section class="page-head">
   <div>
     <h1>Vanakkam, {{ user['name'] }} 👋</h1>
-    <p>Post an event with the crew you need — freelancers free on that date will see it instantly.</p>
+    <p>Your events and crew — create an event from the menu (➕ Create event) anytime.</p>
   </div>
 </section>
 
 <div class="card">
-  <h2>➕ Post a new event</h2>
-  <form method="post" action="{{ url_for('post_event') }}" class="post-form">
-    <div class="form-row">
-      <label>Event name *
-        <input type="text" name="title" required placeholder="e.g. Priya & Karthik — Wedding">
-      </label>
-      <label>Event date *
-        <input type="date" name="event_date" required>
-      </label>
-    </div>
-    <div class="form-row">
-      <label>Location
-        <input type="text" name="location" placeholder="e.g. Mahal, Trichy Road, Coimbatore">
-      </label>
-    </div>
-    <label>Event details
-      <textarea name="details" rows="2" placeholder="Reception at 6 PM, 2 cameras needed…"></textarea>
-    </label>
-    <label>Crew needed <span class="hint">(pick all that apply)</span></label>
-    <div class="skill-grid">
-      <label class="check"><input type="checkbox" name="roles" value="trad_photographer"> Traditional Photographer</label>
-      <label class="check"><input type="checkbox" name="roles" value="trad_videographer"> Traditional Videographer</label>
-      <label class="check"><input type="checkbox" name="roles" value="candid_photographer"> Candid Photographer</label>
-      <label class="check"><input type="checkbox" name="roles" value="candid_videographer"> Candid Videographer</label>
-    </div>
-    <button class="btn btn-primary" type="submit">Post event & find crew</button>
-  </form>
-</div>
-
-<div class="card">
   <h2>📋 My events <span class="count-chip">{{ events|length }}</span></h2>
   {% if not events %}
-    <div class="empty">No events yet — post your first event above.</div>
+    <div class="empty">No events yet — post your first event below.</div>
   {% endif %}
   {% for ev in events %}
     <div class="event-card">
       <div class="event-head">
         <div>
           <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
-          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }} ·
+          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %} ·
             <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
           </div>
         </div>
-        <div class="date-chip"><b>{{ ev['event_date'] }}</b></div>
+        <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
       </div>
       {% for role in ev['roles'] %}
         <div class="role-row">
@@ -80,7 +50,7 @@
         </div>
       {% endfor %}
       <div class="event-actions">
-        <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">Find available freelancers →</a>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">View free freelancers →</a>
         {% if ev['status'] == 'open' %}
           <form method="post" action="{{ url_for('respond') }}" class="inline"
                 onsubmit="return confirm('Close this event? No new applications can come in.')">
@@ -91,5 +61,45 @@
       </div>
     </div>
   {% endfor %}
+</div>
+
+<div class="card" id="post">
+  <h2>➕ Create event</h2>
+  <form method="post" action="{{ url_for('post_event') }}" class="post-form">
+    <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr">
+      <label>Event name *
+        <input type="text" name="title" required placeholder="e.g. Priya & Karthik — Wedding">
+      </label>
+      <label>Event date *
+        <input type="date" name="event_date" required>
+      </label>
+      <label>End date <span class="hint">(multi-day events)</span>
+        <input type="date" name="end_date">
+      </label>
+    </div>
+    <div class="form-row" style="grid-template-columns:1.6fr 1fr">
+      <label>Location
+        <input type="text" name="location" placeholder="e.g. Mahal, Trichy Road, Coimbatore">
+      </label>
+      <label>District
+        <select name="district">
+          <option value="">— select district —</option>
+          {% for d in TN_DISTRICTS %}
+            <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <label>Event details
+      <textarea name="details" rows="2" placeholder="Reception at 6 PM, 2 cameras needed…"></textarea>
+    </label>
+    <label>Crew needed <span class="hint">(pick all that apply — traditional, candid, drone pilot, live streamer, LED wall…)</span></label>
+    <div class="skill-grid">
+      {% for key, label in ROLES.items() %}
+        <label class="check"><input type="checkbox" name="roles" value="{{ key }}"> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <button class="btn btn-cta" type="submit">Post event & find crew</button>
+  </form>
 </div>
 {% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Studio Profile{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>👤 Studio profile</h1>
+    <p>Update your studio details.</p>
+  </div>
+</section>
+
+<div class="card" style="max-width:520px">
+  <form method="post" action="{{ url_for('studio_profile') }}">
+    <label>Studio name
+      <input type="text" name="name" value="{{ user['name'] }}" required>
+    </label>
+    <label>Email
+      <input type="email" value="{{ user['email'] }}" disabled>
+    </label>
+    <label>Phone
+      <input type="text" name="phone" value="{{ user['phone'] or '' }}" placeholder="98XXXXXXXX">
+    </label>
+    <button class="btn btn-primary" type="submit">Save changes</button>
+  </form>
+  <hr style="border:none;border-top:1px dashed var(--border);margin:1.1rem 0">
+  <details>
+    <summary style="cursor:pointer;color:var(--accent)">Change password</summary>
+    <form method="post" action="{{ url_for('change_password') }}" style="margin-top:.8rem">
+      <label>Current password
+        <input type="password" name="current_password" required>
+      </label>
+      <label>New password
+        <input type="password" name="new_password" required minlength="6">
+      </label>
+      <label>Confirm new password
+        <input type="password" name="confirm_password" required>
+      </label>
+      <button class="btn btn-outline btn-sm" type="submit">Change password</button>
+    </form>
+  </details>
+</div>
+{% endblock %}

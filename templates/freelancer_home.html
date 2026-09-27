@@ -13,7 +13,7 @@
   <div class="dash-col">
     <div class="card">
       <h2>📅 My availability</h2>
-      <p class="hint">Tap a date to mark yourself free. Tap again to remove. Booked dates are locked.</p>
+      <p class="hint">Tap a date to mark yourself free. Tap again to remove. Tap a booked (orange) date to see the function details.</p>
       <div class="cal-toolbar">
         <button class="btn btn-outline btn-sm" id="cal-prev">‹</button>
         <strong id="cal-title"></strong>
@@ -27,27 +27,12 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>👤 My profile</h2>
-      {% if profile %}
-        <div class="badges">
-          {% for s in profile['skills'].strip(',').split(',') if s %}
-            <span class="badge">{{ role_label(s) }}</span>
-          {% endfor %}
-        </div>
-        <p>Rate: <b>₹{{ profile['rate'] or '—' }}</b> per day{% if profile['city'] %} · {{ profile['city'] }}{% endif %}</p>
-        {% if profile['bio'] %}<p class="hint">{{ profile['bio'] }}</p>{% endif %}
-        <a class="btn btn-outline btn-sm" href="{{ url_for('freelancer_profile_edit') }}">Edit profile</a>
-      {% else %}
-        <a class="btn btn-primary btn-sm" href="{{ url_for('freelancer_profile_edit') }}">Complete my profile</a>
-      {% endif %}
-    </div>
   </div>
 
   <div class="dash-col wide">
     <div class="card">
       <h2>🎯 Matching events <span class="count-chip">{{ matches|length }}</span></h2>
-      <p class="hint">Events on dates you are free, needing your skills.</p>
+      <p class="hint">Events on dates you are free, needing your skills. Multi-day events match if you're free on any of their dates.</p>
       {% if not matches %}
         <div class="empty">No matching events right now.<br>Mark more free dates above, or <a href="{{ url_for('browse_events') }}">browse all events</a>.</div>
       {% endif %}
@@ -58,7 +43,7 @@
               <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
               <div class="event-meta">🏢 {{ ev['studio_name'] }} · 📍 {{ ev['location'] or 'location TBD' }}</div>
             </div>
-            <div class="date-chip"><b>{{ ev['event_date']|truncate(5, True, '') }}</b></div>
+            <div class="date-chip"><b>{{ ev['event_date'][5:] }}{% if ev['end_date'] and ev['end_date'] != ev['event_date'] %} → {{ ev['end_date'][5:] }}{% endif %}</b></div>
           </div>
           {% for m in ev['my_matches'] %}
             <div class="match-row">
@@ -96,7 +81,10 @@
         <div class="booking-row {% if b['status'] == 'booked' %}ok{% endif %}">
           <div>
             <b>{{ b['event_title'] }}</b> · {{ role_label(b['role_key']) }}
-            <div class="event-meta">{{ b['event_date'] }} · 🏢 {{ b['studio_name'] }}{% if b['location'] %} · 📍 {{ b['location'] }}{% endif %}</div>
+            <div class="event-meta">{{ b['date_str'] }} · 🏢 {{ b['studio_name'] }}{% if b['location'] %} · 📍 {{ b['location'] }}{% endif %}
+            {% if b['status'] == 'booked' and b['advance_amount'] %}
+              <br>💰 Advance ₹{{ b['advance_amount'] }} — {{ '✅ paid' if b['advance_paid'] else '⏳ not paid yet' }}
+            {% endif %}</div>
           </div>
           <div class="booking-actions">
             {% if b['status'] == 'invited' %}

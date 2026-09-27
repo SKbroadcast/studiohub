@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Schedule Notes{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>📅 Schedule notes</h1>
+    {% if studio_view %}
+    <p>Your events, date-wise. Tap an event to see free freelancers & manage crew.</p>
+    {% else %}
+    <p>Events booked with you through StudioHub — date-wise.</p>
+    {% endif %}
+  </div>
+</section>
+
+<div class="card">
+  <h2>Upcoming <span class="count-chip">{{ upcoming|length }}</span></h2>
+  {% if not upcoming %}
+    <div class="empty">
+      {% if studio_view %}No upcoming events — create one from the menu (➕ Create event).{% else %}No upcoming bookings through the app yet.{% endif %}
+    </div>
+  {% endif %}
+
+  {% if studio_view %}
+    {% for ev in upcoming %}
+      <div class="note-row">
+        <div class="note-date">{{ event_date_str(ev) }}</div>
+        <div class="note-body">
+          <b><a href="{{ url_for('event_detail', event_id=ev['id']) }}" style="color:var(--text);text-decoration:none">{{ ev['title'] }} ↗</a></b>
+          <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
+          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %}</div>
+          <div class="badges">
+            {% for role in ev['roles'] %}
+              {% if role['filled'] %}
+                <span class="badge badge-ok">✓ {{ role['label'] }}: {% for b in role['bookings'] if b['status'] == 'booked' %}{{ b['freelancer_name'] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+              {% else %}
+                <span class="badge badge-wait">{{ role['label'] }}: open</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <a class="btn btn-primary btn-xs" href="{{ url_for('event_detail', event_id=ev['id']) }}">View free freelancers →</a>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    {% for b in upcoming %}
+      <div class="note-row">
+        <div class="note-date">{{ b['date_str'] }}</div>
+        <div class="note-body">
+          <b>{{ b['title'] }}</b> · {{ b['role'] }}
+          <div class="event-meta">🏢 {{ b['studio_name'] }}{% if b['location'] %} · 📍 {{ b['location'] }}{% endif %}{% if b['district'] %} · 🗺 {{ b['district'] }}{% endif %}</div>
+          {% if b['advance_amount'] %}
+            <div class="event-meta">💰 Advance ₹{{ b['advance_amount'] }} — {{ '✅ paid' if b['advance_paid'] else '⏳ not paid yet' }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+{% if past %}
+<div class="card">
+  <h2>Past <span class="count-chip">{{ past|length }}</span></h2>
+  {% if studio_view %}
+    {% for ev in past %}
+      <div class="note-row past">
+        <div class="note-date">{{ event_date_str(ev) }}</div>
+        <div class="note-body">
+          <b><a href="{{ url_for('event_detail', event_id=ev['id']) }}" style="color:var(--text);text-decoration:none">{{ ev['title'] }} ↗</a></b>
+          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %}</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    {% for b in past %}
+      <div class="note-row past">
+        <div class="note-date">{{ b['date_str'] }}</div>
+        <div class="note-body">
+          <b>{{ b['title'] }}</b> · {{ b['role'] }}
+          <div class="event-meta">🏢 {{ b['studio_name'] }}{% if b['location'] %} · 📍 {{ b['location'] }}{% endif %}</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

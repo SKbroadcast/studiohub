@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<section class="hero">
+  <img src="{{ url_for('static', filename='icons/logo-full.png') }}" alt="StudioHub"
+       style="height:130px;width:auto;margin-bottom:.6rem">
+  <h1 style="font-size:clamp(1.1rem,3vw,1.4rem)">Create your account</h1>
+</section>
+
+<section class="auth-grid" style="max-width:520px;margin:0 auto">
+  <div class="card auth-card">
+    <form method="post" action="{{ url_for('register') }}">
+      <div class="role-toggle">
+        <label class="role-opt">
+          <input type="radio" name="role" value="studio" checked onchange="toggleReg(this.value)">
+          <span>🏢 I'm a <b>Studio</b></span>
+        </label>
+        <label class="role-opt">
+          <input type="radio" name="role" value="freelancer" onchange="toggleReg(this.value)">
+          <span>📷 I'm a <b>Freelancer</b></span>
+        </label>
+      </div>
+
+      <label>Full name / Studio name
+        <input type="text" name="name" required placeholder="e.g. Krishna Studio or Santhosh K">
+      </label>
+      <label>Email
+        <input type="email" name="email" required placeholder="you@example.com">
+      </label>
+      <label>Phone (WhatsApp)
+        <input type="tel" name="phone" placeholder="98XXXXXXXX">
+      </label>
+      <label>Password
+        <input type="password" name="password" required minlength="6" placeholder="At least 6 characters">
+      </label>
+
+      <div id="freelancer-fields" style="display:none">
+        <label>My skills <span class="hint">(pick all that apply)</span></label>
+        <div class="skill-grid">
+          {% for key, label in ROLES.items() %}
+          <label class="check"><input type="checkbox" name="skills" value="{{ key }}"> {{ label }}</label>
+          {% endfor %}
+        </div>
+        <label>Rate per day (₹)
+          <input type="number" name="rate" min="0" placeholder="e.g. 8000">
+        </label>
+        <label>City
+          <input type="text" name="city" placeholder="e.g. Coimbatore">
+        </label>
+        <label>About me / my work
+          <textarea name="bio" rows="2" placeholder="5 years experience, weddings & receptions…"></textarea>
+        </label>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Create account</button>
+    </form>
+    <hr style="border:none;border-top:1px dashed var(--border);margin:1.1rem 0">
+    <p style="text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:.7rem">Already have an account?</p>
+    <a class="btn btn-outline btn-block" href="{{ url_for('landing') }}">← Back to login</a>
+  </div>
+</section>
+{% endblock %}

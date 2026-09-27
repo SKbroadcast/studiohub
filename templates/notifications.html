@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>🔔 Notifications</h1>
+  <p>Applications, booking requests & confirmations — latest first</p>
+</div>
+
+<div class="card">
+  {% if not items %}
+    <div class="empty">No notifications yet.<br>When someone applies, invites or books you, it shows up here.</div>
+  {% endif %}
+  {% for n in items %}
+    <a class="notif-row {% if not n['is_read'] %}unread{% endif %}" href="{{ n['link'] or url_for('notifications_page') }}">
+      <span class="notif-dot"></span>
+      <span>
+        {{ n['message'] }}
+        <span class="notif-time">{{ n['created_at'] }}{% if not n['is_read'] %} · <b>new</b>{% endif %}</span>
+      </span>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -6,6 +6,23 @@ function toggleReg(role) {
   if (el) el.style.display = role === "freelancer" ? "block" : "none";
 }
 
+/* ---------------- 3-dot menu ---------------- */
+(function () {
+  var btn = document.getElementById("menu-btn");
+  var pop = document.getElementById("menu-pop");
+  if (!btn || !pop) return;
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    pop.classList.toggle("open");
+  });
+  document.addEventListener("click", function (e) {
+    if (!pop.contains(e.target)) pop.classList.remove("open");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") pop.classList.remove("open");
+  });
+})();
+
 /* ---------------- availability calendar ---------------- */
 (function () {
   var cal = document.getElementById("calendar");
@@ -15,7 +32,7 @@ function toggleReg(role) {
   var today = new Date();
   var y = today.getFullYear(), m = today.getMonth();
   var free = {};      // date -> true (available)
-  var booked = {};    // date -> true (confirmed booking)
+  var booked = {};    // date -> {type,title,studio,location,district,role,date_str,notes}
   var monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
 
@@ -25,9 +42,11 @@ function toggleReg(role) {
     return d.getFullYear() + "-" + mm + "-" + dd;
   }
 
-  // collect already-booked dates from the page (server-rendered booking list)
+  // legacy fallback: booked dates rendered into the page
   document.querySelectorAll("[data-booked-date]").forEach(function (el) {
-    booked[el.getAttribute("data-booked-date")] = true;
+    if (!booked[el.getAttribute("data-booked-date")]) {
+      booked[el.getAttribute("data-booked-date")] = { type: "app", title: "Booked", studio: "", location: "", district: "", role: "", date_str: el.getAttribute("data-booked-date") };
+    }
   });
 
   fetch("/api/availability")
@@ -37,6 +56,7 @@ function toggleReg(role) {
         var dt = new Date(d + "T00:00:00");
         if (dt >= today) free[d] = true;
       });
+      Object.keys(data.booked || {}).forEach(function (d) { booked[d] = data.booked[d]; });
       render();
     });
 
@@ -63,14 +83,47 @@ function toggleReg(role) {
         cell.className = "cal-cell";
         cell.textContent = day;
         if (key === fmt(today)) cell.classList.add("today");
-        if (booked[key]) cell.classList.add("booked");
-        else if (free[key]) cell.classList.add("free");
-        if (d >= today && !booked[key]) {
+        if (booked[key]) {
+          cell.classList.add("booked");
+          cell.title = booked[key].title;
+          cell.addEventListener("click", function () { showDetails(key); });
+        } else if (free[key]) {
+          cell.classList.add("free");
+          if (d >= today) cell.addEventListener("click", function () { toggle(key, cell); });
+        } else if (d >= today) {
           cell.addEventListener("click", function () { toggle(key, cell); });
         }
         cal.appendChild(cell);
       })(day);
     }
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return "&#" + c.charCodeAt(0) + ";";
+    });
+  }
+
+  function showDetails(key) {
+    var b = booked[key];
+    if (!b) return;
+    var html = '<div class="cal-modal" id="cal-modal"><div class="cal-modal-box">' +
+      "<h3>" + (b.type === "note" ? "📝 " : "🎬 ") + esc(b.title) + "</h3>" +
+      "<p><span class='muted'>Date:</span> " + esc(b.date_str || key) + "</p>" +
+      (b.role ? "<p><span class='muted'>Role:</span> " + esc(b.role) + "</p>" : "") +
+      (b.studio ? "<p><span class='muted'>Studio:</span> " + esc(b.studio) + "</p>" : "") +
+      (b.location ? "<p><span class='muted'>Location:</span> " + esc(b.location) + "</p>" : "") +
+      (b.district ? "<p><span class='muted'>District:</span> " + esc(b.district) + "</p>" : "") +
+      (b.notes ? "<p><span class='muted'>Notes:</span> " + esc(b.notes) + "</p>" : "") +
+      "<p><span class='muted'>Type:</span> " + (b.type === "note" ? "Noted by me (outside booking)" : "Booked through StudioHub") + "</p>" +
+      '<button class="btn btn-primary cal-modal-close" onclick="document.getElementById(\'cal-modal\').remove()">Close</button>' +
+      "</div></div>";
+    var old = document.getElementById("cal-modal");
+    if (old) old.remove();
+    document.body.insertAdjacentHTML("beforeend", html);
+    document.getElementById("cal-modal").addEventListener("click", function (e) {
+      if (e.target === this) this.remove();
+    });
   }
 
   function toggle(key, cell) {

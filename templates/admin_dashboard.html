@@ -11,6 +11,55 @@
 </div>
 
 <div class="card">
+  <h2>📈 Bookings per month</h2>
+  {% if bookings_month %}
+  <div class="bars">
+    {% set mx = (bookings_month | map(attribute='c') | max) or 1 %}
+    {% for r in bookings_month %}
+    <div class="bar-row">
+      <span class="bar-label">{{ r['ym'] }}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:{{ (r['c'] / mx * 100)|round(1) }}%"></div></div>
+      <span class="bar-val">{{ r['c'] }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="empty">No bookings yet.</div>{% endif %}
+</div>
+
+<div class="dash-grid">
+<div class="dash-col">
+  <div class="card">
+    <h2>🏆 Top freelancers</h2>
+    {% if top_freelancers %}{% for r in top_freelancers %}
+    <div class="bar-row"><span class="bar-label">{{ r['name'] }}</span>
+      <div class="bar-track"><div class="bar-fill alt" style="width:{{ (r['c'] / (top_freelancers[0]['c'] or 1) * 100)|round(1) }}%"></div></div>
+      <span class="bar-val">{{ r['c'] }}</span></div>
+    {% endfor %}{% else %}<div class="empty">No confirmed bookings yet.</div>{% endif %}
+  </div>
+  <div class="card">
+    <h2>🏢 Top studios (events)</h2>
+    {% if top_studios %}{% for r in top_studios %}
+    <div class="bar-row"><span class="bar-label">{{ r['name'] }}</span>
+      <div class="bar-track"><div class="bar-fill alt" style="width:{{ (r['c'] / (top_studios[0]['c'] or 1) * 100)|round(1) }}%"></div></div>
+      <span class="bar-val">{{ r['c'] }}</span></div>
+    {% endfor %}{% else %}<div class="empty">No events yet.</div>{% endif %}
+  </div>
+</div>
+<div class="dash-col">
+  <div class="card">
+    <h2>🎬 Role demand</h2>
+    {% if role_demand %}
+    {% for r in role_demand %}
+    <div class="bar-row"><span class="bar-label">{{ role_label(r['role_key']) }}</span>
+      <div class="bar-track"><div class="bar-fill alt2" style="width:{{ (r['c'] / (role_demand[0]['c'] or 1) * 100)|round(1) }}%"></div></div>
+      <span class="bar-val">{{ r['c'] }}</span></div>
+    {% endfor %}
+    {% else %}<div class="empty">No roles requested yet.</div>{% endif %}
+  </div>
+</div>
+</div>
+
+<div class="card">
   <h2>🕐 Recent bookings</h2>
   {% if not recent %}
     <div class="empty">No bookings yet.</div>
