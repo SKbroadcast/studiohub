@@ -103,22 +103,6 @@ def close_db(exc):
         db.close()
 
 
-def reset_admin(username="admin", password="admin123"):
-    """Set the single admin account to the given username/password."""
-    db = sqlite3.connect(DB_PATH)
-    db.executescript(SCHEMA)
-    row = db.execute("SELECT id FROM admins ORDER BY id LIMIT 1").fetchone()
-    if row:
-        db.execute("UPDATE admins SET username = ?, password_hash = ? WHERE id = ?",
-                   (username, generate_password_hash(password), row[0]))
-    else:
-        db.execute(
-            "INSERT INTO admins (username, password_hash) VALUES (?, ?)",
-            (username, generate_password_hash(password)))
-    db.commit()
-    db.close()
-
-
 def init_db():
     db = sqlite3.connect(DB_PATH)
     db.executescript(SCHEMA)
@@ -129,12 +113,6 @@ def init_db():
             (generate_password_hash("admin123"),))
     db.commit()
     db.close()
-    # admin recovery: if ADMIN_USERNAME + ADMIN_PASSWORD env vars are set,
-    # they override the stored admin login on every startup (used on Render).
-    env_user = os.environ.get("ADMIN_USERNAME", "").strip().lower()
-    env_pass = os.environ.get("ADMIN_PASSWORD", "")
-    if env_user and len(env_pass) >= 6:
-        reset_admin(env_user, env_pass)
 
 
 init_db()
@@ -981,15 +959,5 @@ def admin_settings():
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "resetadmin":
-        reset_admin()
-        print("=" * 50)
-        print("Admin login reset!")
-        print("  username: admin")
-        print("  password: admin123")
-        print("Login panni Settings la password maathunga!")
-        print("=" * 50)
-    else:
-        port = int(os.environ.get("PORT", 5000))
-        app.run(host="0.0.0.0", port=port, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)

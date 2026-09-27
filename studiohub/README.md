@@ -90,13 +90,3 @@ Separate admin login at **`/admin`** (also linked from the landing page).
 
 Admin accounts are stored in the `admins` table; the default one is seeded
 automatically on first run. Existing databases are upgraded automatically.
-
-### Forgot the admin login?
-
-- **On your computer:** in the app folder run:
-  `python app.py resetadmin`
-  This resets to username `admin` / password `admin123`. Log in and change it in Settings.
-- **On Render (hosted):** Dashboard → your service → **Environment** → add
-  `ADMIN_USERNAME` and `ADMIN_PASSWORD` env vars → Save. The service restarts and
-  those become the admin login. After logging in, you can delete those env vars
-  (otherwise they override the stored password on every restart).
