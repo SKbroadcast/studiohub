@@ -4,12 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Login — StudioHub</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/icons/icon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/icons/icon-180.png">
+<meta name="theme-color" content="#0a1128">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <main class="container" style="max-width:420px;margin-top:8vh">
   <div class="hero" style="padding:1rem 0">
-    <h1>🛡 Studio<span style="color:var(--accent)">Hub</span> Admin</h1>
+    <h1><img src="/static/icons/icon-48.png" alt="StudioHub" style="height:1.1em;vertical-align:-0.2em;border-radius:5px"> Studio<span style="color:var(--accent)">Hub</span> Admin</h1>
     <p class="sub" style="margin-bottom:1rem">Super admin control panel</p>
   </div>
   {% with messages = get_flashed_messages(with_categories=true) %}

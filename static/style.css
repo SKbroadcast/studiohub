@@ -1,17 +1,17 @@
 :root {
-  --bg: #101014;
-  --bg2: #17171d;
-  --card: #1d1d25;
-  --card2: #23232d;
-  --border: #2e2e3a;
-  --text: #ececf1;
-  --muted: #9a9aa8;
-  --accent: #f5b942;
-  --accent2: #ffd479;
+  --bg: #050b20;
+  --bg2: #0a1128;
+  --card: #0e1731;
+  --card2: #142044;
+  --border: #22315f;
+  --text: #eef1fb;
+  --muted: #96a0c3;
+  --accent: #ffcc00;
+  --accent2: #ff6600;
   --ok: #3ecf8e;
-  --wait: #6ea8fe;
+  --wait: #00a2ff;
   --hot: #ff7b6b;
-  --dim: #5b5b6b;
+  --dim: #5a6690;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -93,7 +93,7 @@ input[type="date"] { color-scheme: dark; }
   padding: 0.55rem 1.1rem; font-size: 0.92rem; font-weight: 600;
   cursor: pointer; text-decoration: none; text-align: center; font-family: inherit;
 }
-.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #1a1206; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #241000; }
 .btn-primary:hover { filter: brightness(1.08); }
 .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
 .btn-outline:hover { border-color: var(--accent); }
