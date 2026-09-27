@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>My profile</h1>
+    <p>Keep your skills, rate and portfolio fresh — studios see these when picking crew.</p>
+  </div>
+</section>
+
+<div class="dash-grid">
+<div class="dash-col">
+
+<div class="card">
+  <h2>👤 Details & skills</h2>
+  <form method="post" action="{{ url_for('freelancer_profile_edit') }}">
+    <label>Phone (WhatsApp)
+      <input type="tel" name="phone" value="{{ user['phone'] or '' }}" placeholder="98XXXXXXXX">
+    </label>
+    <label>My skills *</label>
+    <div class="skill-grid">
+      {% for key, label in ROLES.items() %}
+      <label class="check"><input type="checkbox" name="skills" value="{{ key }}" {{ 'checked' if key in my_skills }}> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <div class="form-row">
+      <label>Rate per day (₹)
+        <input type="number" name="rate" min="0" value="{{ profile['rate'] if profile else 0 }}">
+      </label>
+      <label>City
+        <input type="text" name="city" value="{{ profile['city'] if profile else '' }}" placeholder="e.g. Madurai">
+      </label>
+    </div>
+    <label>About me / my work
+      <textarea name="bio" rows="3" placeholder="5 years experience, weddings & receptions…">{{ profile['bio'] if profile else '' }}</textarea>
+    </label>
+    <label>UPI ID <span class="hint">(for advance payments from studios)</span>
+      <input type="text" name="upi_id" value="{{ profile['upi_id'] if profile else '' }}" placeholder="yourname@upi">
+    </label>
+    <button class="btn btn-primary" type="submit">Save profile</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>🔒 Change password</h2>
+  <form method="post" action="{{ url_for('change_password') }}">
+    <label>Current password
+      <input type="password" name="current_password" required>
+    </label>
+    <div class="form-row">
+      <label>New password
+        <input type="password" name="new_password" minlength="6" required>
+      </label>
+      <label>Confirm new password
+        <input type="password" name="confirm_password" minlength="6" required>
+      </label>
+    </div>
+    <button class="btn btn-outline" type="submit">Change password</button>
+  </form>
+</div>
+
+</div>
+<div class="dash-col wide">
+
+<div class="card">
+  <h2>🖼 My portfolio <span class="count-chip">{{ photos|length }}/8</span></h2>
+  <p class="hint">Your best work — studios see this before booking you.</p>
+  <form method="post" action="{{ url_for('portfolio_upload') }}" enctype="multipart/form-data" class="form-row" style="align-items:end">
+    <label>Photo (JPG/PNG)
+      <input type="file" name="photo" accept="image/*" required>
+    </label>
+    <label>Caption (optional)
+      <input type="text" name="caption" maxlength="100" placeholder="e.g. Church wedding, candid">
+    </label>
+    <button class="btn btn-primary" type="submit">Upload</button>
+  </form>
+  {% if photos %}
+  <div class="gallery">
+    {% for p in photos %}
+    <div class="gallery-item">
+      <img src="{{ url_for('portfolio_photo', photo_id=p['id']) }}" alt="{{ p['caption'] or 'portfolio' }}">
+      {% if p['caption'] %}<span class="gallery-cap">{{ p['caption'] }}</span>{% endif %}
+      <form method="post" action="{{ url_for('portfolio_delete', photo_id=p['id']) }}"
+            onsubmit="return confirm('Delete this photo?')">
+        <button class="gallery-del" type="submit" title="Delete">✕</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">No photos yet — add your best work above!</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>⭐ My ratings</h2>
+  {% if reviews %}
+    <p style="font-size:1.1rem"><b>{{ stars_str(avg) }}</b> {{ avg }} · {{ rating_count }} review{{ '' if rating_count == 1 else 's' }}</p>
+    {% for r in reviews %}
+    <div class="notif-row" style="display:block">
+      <b>{{ stars_str(r['stars']) }}</b> <span class="hint">{{ r['stars'] }}/5</span>
+      <span class="event-meta">by {{ r['studio_name'] }} · {{ r['created_at'] }}</span>
+      {% if r['comment'] %}<div class="event-meta" style="margin-top:.2rem">“{{ r['comment'] }}”</div>{% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">No ratings yet — complete bookings and studios will rate you.</div>
+  {% endif %}
+</div>
+
+</div>
+</div>
+{% endblock %}

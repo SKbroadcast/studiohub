@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}My Events{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <h1>Vanakkam, {{ user['name'] }} 👋</h1>
+    <p>Post an event with the crew you need — freelancers free on that date will see it instantly.</p>
+  </div>
+</section>
+
+<div class="card">
+  <h2>➕ Post a new event</h2>
+  <form method="post" action="{{ url_for('post_event') }}" class="post-form">
+    <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr">
+      <label>Event name *
+        <input type="text" name="title" required placeholder="e.g. Priya & Karthik — Wedding">
+      </label>
+      <label>Event date *
+        <input type="date" name="event_date" required>
+      </label>
+      <label>End date <span class="hint">(multi-day events)</span>
+        <input type="date" name="end_date">
+      </label>
+    </div>
+    <div class="form-row">
+      <label>Location
+        <input type="text" name="location" placeholder="e.g. Mahal, Trichy Road, Coimbatore">
+      </label>
+    </div>
+    <label>Event details
+      <textarea name="details" rows="2" placeholder="Reception at 6 PM, 2 cameras needed…"></textarea>
+    </label>
+    <label>Crew needed <span class="hint">(pick all that apply)</span></label>
+    <div class="skill-grid">
+      <label class="check"><input type="checkbox" name="roles" value="trad_photographer"> Traditional Photographer</label>
+      <label class="check"><input type="checkbox" name="roles" value="trad_videographer"> Traditional Videographer</label>
+      <label class="check"><input type="checkbox" name="roles" value="candid_photographer"> Candid Photographer</label>
+      <label class="check"><input type="checkbox" name="roles" value="candid_videographer"> Candid Videographer</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Post event & find crew</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>📋 My events <span class="count-chip">{{ events|length }}</span></h2>
+  {% if not events %}
+    <div class="empty">No events yet — post your first event above.</div>
+  {% endif %}
+  {% for ev in events %}
+    <div class="event-card">
+      <div class="event-head">
+        <div>
+          <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
+          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }} ·
+            <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
+          </div>
+        </div>
+        <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
+      </div>
+      {% for role in ev['roles'] %}
+        <div class="role-row">
+          <span class="badge badge-role">{{ role['label'] }}</span>
+          {% if role['filled'] %}
+            {% for b in role['bookings'] if b['status'] == 'booked' %}
+              <span class="badge badge-ok">✓ {{ b['freelancer_name'] }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="badge badge-wait">Open</span>
+            {% set applicants = role['bookings'] | selectattr('status', 'in', ['applied']) | list %}
+            {% if applicants %}
+              <span class="hint">{{ applicants|length }} applied:</span>
+              {% for b in applicants %}
+                <form method="post" action="{{ url_for('respond') }}" class="inline person-chip">
+                  <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                  <span class="chip-name">{{ b['freelancer_name'] }}</span>
+                  <button class="btn btn-primary btn-xs" name="action" value="accept">Book</button>
+                  <button class="btn btn-ghost btn-xs" name="action" value="decline">✕</button>
+                </form>
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endfor %}
+      <div class="event-actions">
+        <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">Find available freelancers →</a>
+        {% if ev['status'] == 'open' %}
+          <form method="post" action="{{ url_for('respond') }}" class="inline"
+                onsubmit="return confirm('Close this event? No new applications can come in.')">
+            <input type="hidden" name="event_id" value="{{ ev['id'] }}">
+            <button class="btn btn-ghost btn-sm" name="action" value="close_event">Close event</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

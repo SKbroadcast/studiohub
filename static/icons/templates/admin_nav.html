@@ -1,0 +1,12 @@
+<div class="nav">
+  <a class="brand" href="{{ url_for('admin_dashboard') }}">🛡 Studio<span>Hub</span> Admin</a>
+  <div class="nav-right">
+    <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Dashboard</a>
+    <a href="{{ url_for('admin_users') }}" class="nav-link">Users</a>
+    <a href="{{ url_for('admin_events') }}" class="nav-link">Events</a>
+    <a href="{{ url_for('admin_bookings') }}" class="nav-link">Bookings</a>
+    <a href="{{ url_for('admin_settings') }}" class="nav-link">Settings</a>
+    <a href="{{ url_for('landing') }}" class="nav-link">↩ Main site</a>
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-outline btn-sm">Logout</a>
+  </div>
+</div>

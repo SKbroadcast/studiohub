@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}StudioHub{% endblock %} — StudioHub</title>
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<link rel="icon" type="image/png" sizes="48x48" href="{{ url_for('static', filename='icons/icon-48.png') }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}">
+<meta name="theme-color" content="#0a1128">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav class="nav">
+  <a class="brand" href="{{ url_for('landing') }}"><img src="{{ url_for('static', filename='icons/icon-48.png') }}" alt="StudioHub logo" style="height:1.35em;vertical-align:-0.3em;border-radius:5px;margin-right:2px"> Studio<span>Hub</span></a>
+  {% if user %}
+    <div class="nav-right">
+      <a href="{{ url_for('browse_events') }}" class="nav-link">Events</a>
+      <a href="{{ url_for('notifications_page') }}" class="nav-bell" title="Notifications">
+        🔔{% if unread_count %}<span class="bell-badge">{{ unread_count }}</span>{% endif %}
+      </a>
+      {% if user['role'] == 'freelancer' %}
+        <a href="{{ url_for('freelancer_home') }}" class="nav-link">My Dashboard</a>
+        <a href="{{ url_for('freelancer_profile_edit') }}" class="nav-link">Profile</a>
+      {% else %}
+        <a href="{{ url_for('studio_home') }}" class="nav-link">My Events</a>
+      {% endif %}
+      <span class="nav-user">{{ user['name'] }} · {{ 'Studio' if user['role']=='studio' else 'Freelancer' }}</span>
+      <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Logout</a>
+    </div>
+  {% endif %}
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flashes">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<main class="container">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  StudioHub — event studios meet freelance photographers & videographers
+</footer>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<section class="hero">
+  <img src="{{ url_for('static', filename='icons/logo-full.png') }}" alt="StudioHub"
+       style="height:170px;width:auto;margin-bottom:.6rem">
+  <h1 style="font-size:clamp(1.1rem,3vw,1.5rem);color:var(--muted);font-weight:600">
+    meet freelance photographers & videographers
+  </h1>
+</section>
+
+<section class="auth-grid" style="max-width:440px;margin:0 auto">
+  <div class="card auth-card">
+    <h2>Log in</h2>
+    <form method="post" action="{{ url_for('login') }}">
+      <label>Email or mobile number
+        <input type="text" name="email" required placeholder="you@example.com or 98XXXXXXXX">
+      </label>
+      <label>Password
+        <input type="password" name="password" required placeholder="••••••">
+      </label>
+      <button class="btn btn-primary btn-block" type="submit">Log in</button>
+    </form>
+    <hr style="border:none;border-top:1px dashed var(--border);margin:1.1rem 0">
+    <p style="text-align:center;color:var(--muted);font-size:.9rem;margin-bottom:.7rem">New to StudioHub?</p>
+    <a class="btn btn-outline btn-block" href="{{ url_for('register') }}">Create account</a>
+  </div>
+</section>
+
+<section class="auth-grid" style="max-width:440px;margin:0 auto">
+  <div class="card auth-card" style="text-align:center">
+    <p class="hint"><a href="{{ url_for('admin_page') }}">🛡 Admin login →</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "admin_base.html" %}
+{% block admincontent %}
+<div class="page-head"><h1>✏️ Edit user</h1><p>{{ u.name }} · {{ u.role }} · joined {{ u.created_at }}</p></div>
+
+<div class="card" style="max-width:640px">
+  <form method="post" action="{{ url_for('admin_user_edit', user_id=u.id) }}">
+    <label>Full name / Studio name
+      <input type="text" name="name" value="{{ u.name }}" required>
+    </label>
+    <div class="form-row">
+      <label>Email (also used for login)
+        <input type="text" name="email" value="{{ u.email }}" required>
+      </label>
+      <label>Phone
+        <input type="text" name="phone" value="{{ u.phone or '' }}">
+      </label>
+    </div>
+
+    {% if u.role == 'freelancer' %}
+    <label>Skills</label>
+    <div class="skill-grid">
+      {% for key, label in ROLES.items() %}
+      <label class="check"><input type="checkbox" name="skills" value="{{ key }}" {{ 'checked' if key in my_skills }}> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <div class="form-row">
+      <label>Rate per day (₹)
+        <input type="number" name="rate" min="0" value="{{ profile['rate'] if profile else 0 }}">
+      </label>
+      <label>City
+        <input type="text" name="city" value="{{ profile['city'] if profile else '' }}">
+      </label>
+    </div>
+    <label>About
+      <textarea name="bio" rows="2">{{ profile['bio'] if profile else '' }}</textarea>
+    </label>
+    {% endif %}
+
+    <label>Reset password <span class="hint">(blank = keep current password)</span>
+      <input type="text" name="new_password" placeholder="New password (min 6 characters)">
+    </label>
+
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <button class="btn btn-primary" type="submit" name="action" value="save">Save changes</button>
+      <button class="btn btn-ghost" type="submit" name="action" value="delete"
+              onclick="return confirm('Delete this user and ALL their data (events, bookings, availability)? This cannot be undone.')"
+              style="color:var(--hot)">Delete user</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard{% endblock %}
+{% block content %}
+
+<section class="page-head">
+  <div>
+    <h1>Vanakkam, {{ user['name'] }} 👋</h1>
+    <p>Mark your free dates below — events needing your skills on those dates show up automatically.</p>
+  </div>
+</section>
+
+<div class="dash-grid">
+  <div class="dash-col">
+    <div class="card">
+      <h2>📅 My availability</h2>
+      <p class="hint">Tap a date to mark yourself free. Tap again to remove. Booked dates are locked.</p>
+      <div class="cal-toolbar">
+        <button class="btn btn-outline btn-sm" id="cal-prev">‹</button>
+        <strong id="cal-title"></strong>
+        <button class="btn btn-outline btn-sm" id="cal-next">›</button>
+      </div>
+      <div id="calendar" class="calendar"></div>
+      <div class="cal-legend">
+        <span><i class="dot free"></i> Free</span>
+        <span><i class="dot booked"></i> Booked</span>
+        <span><i class="dot today"></i> Today</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👤 My profile</h2>
+      {% if profile %}
+        <div class="badges">
+          {% for s in profile['skills'].strip(',').split(',') if s %}
+            <span class="badge">{{ role_label(s) }}</span>
+          {% endfor %}
+        </div>
+        <p>Rate: <b>₹{{ profile['rate'] or '—' }}</b> per day{% if profile['city'] %} · {{ profile['city'] }}{% endif %}</p>
+        {% if profile['bio'] %}<p class="hint">{{ profile['bio'] }}</p>{% endif %}
+        <a class="btn btn-outline btn-sm" href="{{ url_for('freelancer_profile_edit') }}">Edit profile</a>
+      {% else %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('freelancer_profile_edit') }}">Complete my profile</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dash-col wide">
+    <div class="card">
+      <h2>🎯 Matching events <span class="count-chip">{{ matches|length }}</span></h2>
+      <p class="hint">Events on dates you are free, needing your skills. Multi-day events match if you're free on any of their dates.</p>
+      {% if not matches %}
+        <div class="empty">No matching events right now.<br>Mark more free dates above, or <a href="{{ url_for('browse_events') }}">browse all events</a>.</div>
+      {% endif %}
+      {% for ev in matches %}
+        <div class="event-card">
+          <div class="event-head">
+            <div>
+              <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
+              <div class="event-meta">🏢 {{ ev['studio_name'] }} · 📍 {{ ev['location'] or 'location TBD' }}</div>
+            </div>
+            <div class="date-chip"><b>{{ ev['event_date'][5:] }}{% if ev['end_date'] and ev['end_date'] != ev['event_date'] %} → {{ ev['end_date'][5:] }}{% endif %}</b></div>
+          </div>
+          {% for m in ev['my_matches'] %}
+            <div class="match-row">
+              <span class="badge badge-role">{{ m['role']['label'] }}</span>
+              {% set st = m['my_booking']['status'] if m['my_booking'] else None %}
+              {% if st == 'booked' %}
+                <span class="badge badge-ok">✓ Booked</span>
+              {% elif st == 'applied' %}
+                <span class="badge badge-wait">Applied — waiting for studio</span>
+              {% elif st == 'invited' %}
+                <span class="badge badge-hot">Studio wants you! Check My Bookings below</span>
+              {% elif st == 'declined' %}
+                <span class="badge badge-dim">Declined</span>
+              {% elif m['role']['filled'] %}
+                <span class="badge badge-dim">Filled</span>
+              {% else %}
+                <form method="post" action="{{ url_for('apply') }}" class="inline">
+                  <input type="hidden" name="event_id" value="{{ ev['id'] }}">
+                  <input type="hidden" name="role_key" value="{{ m['role']['role_key'] }}">
+                  <button class="btn btn-primary btn-sm">Apply as {{ m['role']['label'] }}</button>
+                </form>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <h2>🤝 My bookings</h2>
+      {% if not my_bookings %}
+        <div class="empty">Nothing yet — mark free dates & apply to events.</div>
+      {% endif %}
+      {% for b in my_bookings %}
+        <div class="booking-row {% if b['status'] == 'booked' %}ok{% endif %}">
+          <div>
+            <b>{{ b['event_title'] }}</b> · {{ role_label(b['role_key']) }}
+            <div class="event-meta">{{ b['date_str'] }} · 🏢 {{ b['studio_name'] }}{% if b['location'] %} · 📍 {{ b['location'] }}{% endif %}
+            {% if b['status'] == 'booked' and b['advance_amount'] %}
+              <br>💰 Advance ₹{{ b['advance_amount'] }} — {{ '✅ paid' if b['advance_paid'] else '⏳ not paid yet' }}
+            {% endif %}</div>
+          </div>
+          <div class="booking-actions">
+            {% if b['status'] == 'invited' %}
+              <form method="post" action="{{ url_for('respond') }}" class="inline">
+                <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                <button class="btn btn-primary btn-sm" name="action" value="accept">Accept</button>
+              </form>
+              <form method="post" action="{{ url_for('respond') }}" class="inline">
+                <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                <button class="btn btn-ghost btn-sm" name="action" value="decline">Decline</button>
+              </form>
+            {% elif b['status'] == 'booked' %}
+              <span class="badge badge-ok">✓ Confirmed</span>
+              <form method="post" action="{{ url_for('respond') }}" class="inline"
+                    onsubmit="return confirm('Cancel this confirmed booking?')">
+                <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                <button class="btn btn-ghost btn-sm" name="action" value="cancel">Cancel</button>
+              </form>
+            {% elif b['status'] == 'applied' %}
+              <span class="badge badge-wait">Applied</span>
+            {% else %}
+              <span class="badge badge-dim">{{ b['status']|capitalize }}</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
