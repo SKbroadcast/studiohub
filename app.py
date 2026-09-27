@@ -169,12 +169,24 @@ class DBConn:
             self.conn.row_factory = sqlite3.Row
             self.conn.execute("PRAGMA foreign_keys = ON")
 
+    def _pg_run(self, sql, params):
+        """Run one statement on Postgres; auto-rollback so a failed
+        statement never leaves the connection in aborted state."""
+        sql = sql.replace("?", "%s")
+        cur = self.conn.cursor()
+        try:
+            cur.execute(sql, tuple(params))
+        except Exception:
+            try:
+                self.conn.rollback()
+            except Exception:
+                pass
+            raise
+        return cur
+
     def execute(self, sql, params=()):
         if self.pg:
-            sql = sql.replace("?", "%s")
-            cur = self.conn.cursor()
-            cur.execute(sql, tuple(params))
-            return cur
+            return self._pg_run(sql, params)
         return self.conn.execute(sql, tuple(params))
 
     def executescript(self, script):
@@ -183,19 +195,21 @@ class DBConn:
             for stmt in script.split(";"):
                 s = stmt.strip()
                 if s:
-                    cur.execute(s)
+                    try:
+                        cur.execute(s)
+                    except Exception:
+                        self.conn.rollback()
+                        raise
+            self.conn.commit()
             return cur
         return self.conn.executescript(script)
 
     def insert(self, sql, params=()):
         """INSERT; returns the new row id."""
         if self.pg:
-            sql = sql.replace("?", "%s")
             if "returning" not in sql.lower():
                 sql = sql.rstrip().rstrip(";") + " RETURNING id"
-            cur = self.conn.cursor()
-            cur.execute(sql, tuple(params))
-            return cur.fetchone()[0]
+            return self._pg_run(sql, params).fetchone()[0]
         cur = self.conn.execute(sql, tuple(params))
         return cur.lastrowid
 
@@ -752,12 +766,20 @@ def apply():
 @app.route("/schedule-notes")
 @login_required
 def schedule_notes():
-    """Events booked through StudioHub, date-wise (freelancer view)."""
+    """Date-wise schedule: freelancer = app-booked events; studio = own events."""
     u = current_user()
-    if u["role"] != "freelancer":
-        return redirect(url_for("studio_home"))
     db = get_db()
     today = TODAY().isoformat()
+    if u["role"] == "studio":
+        events = []
+        for r in db.execute(
+                "SELECT * FROM events WHERE studio_id = ? ORDER BY event_date",
+                (u["id"],)).fetchall():
+            events.append(event_with_roles(r))
+        upcoming = [e for e in events if e["event_date"] >= today]
+        past = [e for e in events if e["event_date"] < today]
+        return render_template("schedule_notes.html", user=u,
+                               upcoming=upcoming, past=past, studio_view=True)
     items = []
     for b in db.execute(
             """SELECT b.id, b.role_key, b.advance_amount, b.advance_paid,

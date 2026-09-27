@@ -30,6 +30,7 @@
           <a href="{{ url_for('browse_events') }}">🎯 Events</a>
           <a href="{{ url_for('freelancer_profile_edit') }}">👤 Profile</a>
         {% else %}
+          <a href="{{ url_for('schedule_notes') }}">📅 Schedule notes</a>
           <a href="{{ url_for('studio_home') }}#post">➕ Create event</a>
           <a href="{{ url_for('studio_home') }}">📋 My events</a>
           <a href="{{ url_for('studio_profile') }}">👤 Profile</a>
