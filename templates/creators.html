@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Find Creators{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>Find the right crew 🔍</h1>
+    <p>Search freelance photographers & videographers — free, rated, ready to book.</p>
+  </div>
+</section>
+
+<div class="card">
+  <form method="get" action="{{ url_for('creators') }}" class="filter-bar">
+    <label>Search
+      <input type="text" name="q" value="{{ q }}" placeholder="Name or city…">
+    </label>
+    <label>Skill
+      <select name="skill">
+        <option value="">All skills</option>
+        {% for key, label in ROLES.items() %}
+          <option value="{{ key }}" {{ 'selected' if skill == key }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Max price/day
+      <select name="price">
+        <option value="">Any</option>
+        <option value="2000" {{ 'selected' if price == '2000' }}>₹2,000</option>
+        <option value="5000" {{ 'selected' if price == '5000' }}>₹5,000</option>
+        <option value="10000" {{ 'selected' if price == '10000' }}>₹10,000</option>
+        <option value="20000" {{ 'selected' if price == '20000' }}>₹20,000</option>
+      </select>
+    </label>
+    <label>Rating
+      <select name="rating">
+        <option value="">Any</option>
+        <option value="3" {{ 'selected' if rating == '3' }}>★ 3+</option>
+        <option value="4" {{ 'selected' if rating == '4' }}>★ 4+</option>
+        <option value="4.5" {{ 'selected' if rating == '4.5' }}>★ 4.5+</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">Search</button>
+    <a class="btn btn-ghost" href="{{ url_for('creators') }}">Clear</a>
+  </form>
+</div>
+
+{% if not creators %}
+  <div class="empty">No creators match your filters. Try clearing them.</div>
+{% endif %}
+<div class="creator-grid">
+  {% for c in creators %}
+  <div class="creator-card">
+    <a href="{{ url_for('public_profile', user_id=c['id']) }}" class="creator-photo">
+      {% if c['photo_id'] %}
+        <img src="{{ url_for('portfolio_photo', photo_id=c['photo_id']) }}" alt="{{ c['name'] }}">
+      {% else %}
+        <span class="creator-initial">{{ c['name'][:1]|upper }}</span>
+      {% endif %}
+    </a>
+    <div class="creator-info">
+      <div class="creator-name-row">
+        <a href="{{ url_for('public_profile', user_id=c['id']) }}" class="creator-name">{{ c['name'] }}</a>
+        {% if c['rcount'] and c['avg'] >= 4.5 %}<span class="badge badge-ok">PRO</span>{% endif %}
+      </div>
+      <div class="badges">
+        {% for s in c['skills'] %}<span class="badge badge-role">{{ role_label(s) }}</span>{% endfor %}
+      </div>
+      <div class="creator-meta">
+        {% if c['rcount'] %}{{ stars_str(c['avg']) }} {{ c['avg'] }}{% else %}New creator{% endif %}
+        {% if c['city'] %} · 📍 {{ c['city'] }}{% endif %}
+      </div>
+      <div class="creator-meta"><b>₹{{ c['rate'] or '—' }}</b>/day</div>
+      <div class="creator-actions">
+        <a class="btn btn-primary btn-sm" href="{{ url_for('public_profile', user_id=c['id']) }}">View & book</a>
+        <button class="btn btn-outline btn-sm fav-btn {{ 'fav-on' if c['saved'] }}"
+                data-fav-type="user" data-fav-id="{{ c['id'] }}" title="Save">⭐</button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

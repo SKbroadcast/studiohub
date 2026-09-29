@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     role          TEXT NOT NULL CHECK (role IN ('studio','freelancer')),
     phone         TEXT DEFAULT '',
+    instagram_url TEXT DEFAULT '',
+    youtube_url   TEXT DEFAULT '',
     created_at    TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS freelancer_profiles (
@@ -119,11 +121,38 @@ CREATE TABLE IF NOT EXISTS note_events (
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS notifications (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    INTEGER NOT NULL REFERENCES users(id),
-    message    TEXT NOT NULL,
-    link       TEXT DEFAULT '',
-    is_read    INTEGER DEFAULT 0,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    message TEXT NOT NULL,
+    link TEXT DEFAULT '',
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS favorites (          -- studio saves a freelancer
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    target_user_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, target_user_id)
+);
+CREATE TABLE IF NOT EXISTS event_favorites (    -- freelancer saves an event
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    event_id INTEGER NOT NULL REFERENCES events(id),
+    created_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, event_id)
+);
+CREATE TABLE IF NOT EXISTS staff_admins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    perms TEXT DEFAULT '',           -- comma list: dashboard,users,events,bookings
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL REFERENCES users(id),
+    receiver_id INTEGER NOT NULL REFERENCES users(id),
+    body TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS portfolio_photos (
@@ -269,6 +298,8 @@ def init_db():
         "ALTER TABLE bookings ADD COLUMN advance_amount INTEGER DEFAULT 0",
         "ALTER TABLE bookings ADD COLUMN advance_paid INTEGER DEFAULT 0",
         "ALTER TABLE events ADD COLUMN district TEXT DEFAULT ''",
+        "ALTER TABLE users ADD COLUMN instagram_url TEXT DEFAULT ''",
+        "ALTER TABLE users ADD COLUMN youtube_url TEXT DEFAULT ''",
     ]
     for m in migrations:
         try:
@@ -358,6 +389,20 @@ def set_setting(db, key, value):
         db.execute("UPDATE settings SET value = ? WHERE key = ?", (value, key))
     else:
         db.execute("INSERT INTO settings (key, value) VALUES (?, ?)", (key, value))
+
+@app.context_processor
+def inject_unread_msgs():
+    uid = session.get("uid")
+    if not uid:
+        return {"unread_msgs": 0}
+    try:
+        c = get_db().execute(
+            "SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0",
+            (uid,)).fetchone()[0]
+    except Exception:
+        c = 0
+    return {"unread_msgs": c}
+
 
 @app.context_processor
 def inject_social_links():
@@ -697,8 +742,11 @@ def freelancer_profile_edit():
                  request.form.get("city", "").strip(),
                  request.form.get("bio", "").strip(),
                  request.form.get("upi_id", "").strip(), u["id"]))
-            db.execute("UPDATE users SET phone = ? WHERE id = ?",
-                       (request.form.get("phone", "").strip(), u["id"]))
+            db.execute("""UPDATE users SET phone = ?, instagram_url = ?, youtube_url = ?
+                          WHERE id = ?""",
+                       (request.form.get("phone", "").strip(),
+                        request.form.get("instagram_url", "").strip(),
+                        request.form.get("youtube_url", "").strip(), u["id"]))
             db.commit()
             flash("Profile updated.", "success")
             return redirect(url_for("freelancer_home"))
@@ -778,8 +826,15 @@ def schedule_notes():
             events.append(event_with_roles(r))
         upcoming = [e for e in events if e["event_date"] >= today]
         past = [e for e in events if e["event_date"] < today]
+        notes_up = [n for n in db.execute(
+            "SELECT * FROM note_events WHERE user_id = ? AND event_date >= ? ORDER BY event_date",
+            (u["id"], today)).fetchall()]
+        notes_past = [n for n in db.execute(
+            "SELECT * FROM note_events WHERE user_id = ? AND event_date < ? ORDER BY event_date",
+            (u["id"], today)).fetchall()]
         return render_template("schedule_notes.html", user=u,
-                               upcoming=upcoming, past=past, studio_view=True)
+                               upcoming=upcoming, past=past, studio_view=True,
+                               notes_upcoming=notes_up, notes_past=notes_past)
     items = []
     for b in db.execute(
             """SELECT b.id, b.role_key, b.advance_amount, b.advance_paid,
@@ -796,8 +851,15 @@ def schedule_notes():
         items.append(b)
     upcoming = [i for i in items if i["event_date"] >= today]
     past = [i for i in items if i["event_date"] < today]
+    notes_up = [n for n in db.execute(
+        "SELECT * FROM note_events WHERE user_id = ? AND event_date >= ? ORDER BY event_date",
+        (u["id"], today)).fetchall()]
+    notes_past = [n for n in db.execute(
+        "SELECT * FROM note_events WHERE user_id = ? AND event_date < ? ORDER BY event_date",
+        (u["id"], today)).fetchall()]
     return render_template("schedule_notes.html", user=u,
-                           upcoming=upcoming, past=past)
+                           upcoming=upcoming, past=past,
+                           notes_upcoming=notes_up, notes_past=notes_past)
 
 
 @app.route("/note-events", methods=["GET", "POST"])
@@ -805,8 +867,6 @@ def schedule_notes():
 def note_events_page():
     """Manually note outside bookings (not booked through the app)."""
     u = current_user()
-    if u["role"] != "freelancer":
-        return redirect(url_for("studio_home"))
     db = get_db()
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -825,9 +885,10 @@ def note_events_page():
             """INSERT INTO note_events (user_id, title, event_date, location, notes)
                VALUES (?,?,?,?,?)""",
             (u["id"], title, event_date, location, notes))
-        # show it inside My Availability as a booked date too
-        if not db.execute("SELECT 1 FROM availability WHERE user_id = ? AND avail_date = ?",
-                          (u["id"], event_date)).fetchone():
+        # freelancers: show it inside My Availability as a booked date too
+        if u["role"] == "freelancer" and not db.execute(
+                "SELECT 1 FROM availability WHERE user_id = ? AND avail_date = ?",
+                (u["id"], event_date)).fetchone():
             db.execute("INSERT INTO availability (user_id, avail_date) VALUES (?,?)",
                        (u["id"], event_date))
         db.commit()
@@ -871,8 +932,11 @@ def studio_profile():
         if not name:
             flash("Studio name cannot be empty.", "error")
         else:
-            db.execute("UPDATE users SET name = ?, phone = ? WHERE id = ?",
-                       (name, phone, u["id"]))
+            db.execute("""UPDATE users SET name = ?, phone = ?, instagram_url = ?, youtube_url = ?
+                          WHERE id = ?""",
+                       (name, phone,
+                        request.form.get("instagram_url", "").strip(),
+                        request.form.get("youtube_url", "").strip(), u["id"]))
             db.commit()
             flash("Profile updated.", "success")
         return redirect(url_for("studio_profile"))
@@ -887,6 +951,7 @@ def studio_home():
     if u["role"] != "studio":
         return redirect(url_for("freelancer_home"))
     db = get_db()
+    today = TODAY().isoformat()
     events = []
     for r in db.execute("SELECT * FROM events WHERE studio_id = ? ORDER BY event_date DESC",
                         (u["id"],)):
@@ -895,12 +960,64 @@ def studio_home():
             len([b for b in role["bookings"] if b["status"] in ("applied", "invited")])
             for role in ev["roles"])
         events.append(ev)
-    return render_template("studio_home.html", user=u, events=events)
+
+    # calendar payload: date -> list of events on that date (app events + notes)
+    cal = {}
+    for ev in events:
+        for d in event_dates(ev):
+            cal.setdefault(d, []).append(
+                {"type": "event", "title": ev["title"], "id": ev["id"],
+                 "status": ev["status"], "date_str": event_date_str(ev)})
+    for n in db.execute("SELECT * FROM note_events WHERE user_id = ?", (u["id"],)):
+        cal.setdefault(n["event_date"], []).append(
+            {"type": "note", "title": n["title"], "id": 0,
+             "status": "", "date_str": n["event_date"]})
+
+    # crew availability: freelancers free on my upcoming events' dates
+    import json as _json
+    crew = []
+    upcoming = [e for e in events if e["event_date"] >= today][:6]
+    for ev in upcoming:
+        role_keys = [r["role_key"] for r in ev["roles"]]
+        found = {}
+        for a in db.execute(
+                """SELECT DISTINCT u.id, u.name, fp.skills, fp.rate
+                   FROM availability a JOIN users u ON u.id = a.user_id
+                   LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
+                   WHERE a.avail_date >= ? AND a.avail_date <= ?""",
+                (ev["event_date"], event_end(ev))):
+            sk = [s for s in (a["skills"] or "").strip(",").split(",") if s]
+            if any(k in sk for k in role_keys):
+                found[a["id"]] = {"id": a["id"], "name": a["name"],
+                                  "rate": a["rate"] or 0,
+                                  "skills": [k for k in role_keys if k in sk]}
+        crew.append({"ev": ev, "freelancers": sorted(found.values(), key=lambda f: f["name"])})
+    return render_template("studio_home.html", user=u, events=events,
+                           cal_data=_json.dumps(cal), crew=crew)
 
 
-@app.route("/studio/post", methods=["POST"])
+@app.route("/studio/post", methods=["GET", "POST"])
 @login_required
-def post_event():
+def studio_post_page():
+    """Dedicated create-event page (with copy-from-event prefill)."""
+    u = current_user()
+    if u["role"] != "studio":
+        return redirect(url_for("freelancer_home"))
+    if request.method == "POST":
+        return _post_event_submit(u)
+    db = get_db()
+    pre = None
+    copy_id = request.args.get("copy", 0, type=int)
+    if copy_id:
+        r = db.execute("SELECT * FROM events WHERE id = ? AND studio_id = ?",
+                       (copy_id, u["id"])).fetchone()
+        if r:
+            pre = dict(r)
+    return render_template("studio_post.html", user=u, pre=pre)
+
+
+def _post_event_submit(u):
+    db = get_db()
     u = current_user()
     if u["role"] != "studio":
         flash("Only studio accounts can post events.", "error")
@@ -912,7 +1029,7 @@ def post_event():
     roles = [r for r in request.form.getlist("roles") if r in ROLES]
     if not (title and event_date and roles):
         flash("Event name, date and at least one role are required.", "error")
-        return redirect(url_for("studio_home"))
+        return redirect(url_for("studio_post_page"))
     district = request.form.get("district", "").strip()
     if district not in TN_DISTRICTS:
         district = ""
@@ -924,7 +1041,7 @@ def post_event():
                 raise ValueError
     except ValueError:
         flash("Invalid dates (end date must be same day or after start).", "error")
-        return redirect(url_for("studio_home"))
+        return redirect(url_for("studio_post_page"))
     eid = db.insert(
         """INSERT INTO events (studio_id, title, event_date, end_date, location, district, details)
            VALUES (?,?,?,?,?,?,?)""",
@@ -1136,8 +1253,13 @@ def browse_events():
     q += " ORDER BY e.event_date"
 
     events = []
+    saved_set = set()
+    if u["role"] == "freelancer":
+        saved_set = {r["event_id"] for r in db.execute(
+            "SELECT event_id FROM event_favorites WHERE user_id = ?", (u["id"],))}
     for r in db.execute(q, params).fetchall():
         ev = event_with_roles(r)
+        ev["is_saved"] = ev["id"] in saved_set
         events.append(ev)
     return render_template("browse_events.html", user=u, events=events,
                            f_date=f_date, f_skill=f_skill, f_district=f_district,
@@ -1232,8 +1354,15 @@ def public_profile(user_id):
            FROM ratings r JOIN users su ON su.id = r.studio_id
            WHERE r.freelancer_id = ? ORDER BY r.id DESC LIMIT 20""", (user_id,))]
     avg, cnt = avg_rating(db, user_id)
+    u = current_user()
+    is_saved = False
+    if u and u["role"] == "studio":
+        is_saved = bool(db.execute(
+            "SELECT 1 FROM favorites WHERE user_id = ? AND target_user_id = ?",
+            (u["id"], user_id)).fetchone())
     return render_template("public_profile.html", fr=fr, profile=profile,
-                           photos=photos, reviews=reviews, avg=avg, rating_count=cnt)
+                           photos=photos, reviews=reviews, avg=avg, rating_count=cnt,
+                           is_saved=is_saved, user=u)
 
 
 # ---------------------------------------------------------------- ratings
@@ -1397,14 +1526,306 @@ def notifications_page():
 
 
 # ---------------------------------------------------------------- super admin
+def admin_perms():
+    return [p for p in (session.get("admin_perms") or "").split(",") if p]
+
+def is_super_admin():
+    return session.get("admin") and "all" in admin_perms()
+
 def admin_required(fn):
+    perm = getattr(fn, "_perm", None)
     @wraps(fn)
     def wrapper(*args, **kwargs):
         if not session.get("admin"):
             flash("Admin login required.", "error")
             return redirect(url_for("admin_page"))
+        if perm and not (is_super_admin() or perm in admin_perms()):
+            for p, ep in (("dashboard", "admin_dashboard"), ("users", "admin_users"),
+                          ("events", "admin_events"), ("bookings", "admin_bookings")):
+                if is_super_admin() or p in admin_perms():
+                    flash("Your admin account has no access to that section.", "error")
+                    return redirect(url_for(ep))
+            flash("Your admin account has no sections assigned. Contact the super admin.", "error")
+            session.pop("admin", None)
+            session.pop("admin_user", None)
+            session.pop("admin_perms", None)
+            return redirect(url_for("admin_page"))
         return fn(*args, **kwargs)
     return wrapper
+
+def requires_perm(perm):
+    def deco(fn):
+        fn._perm = perm
+        return fn
+    return deco
+
+
+
+# ---------------------------------------------------------------- creators / saved / summary / messages
+
+@app.route("/creators")
+@login_required
+def creators():
+    """Find freelancers: search + skill / price / rating filters."""
+    u = current_user()
+    db = get_db()
+    q = request.args.get("q", "").strip().lower()
+    skill = request.args.get("skill", "").strip()
+    price = request.args.get("price", "").strip()
+    rating = request.args.get("rating", "").strip()
+    try:
+        price_v = int(price) if price else 0
+    except ValueError:
+        price_v = 0
+    try:
+        rating_v = float(rating) if rating else 0.0
+    except ValueError:
+        rating_v = 0.0
+
+    out = []
+    for r in db.execute(
+            """SELECT u.id, u.name, u.phone, fp.skills, fp.rate, fp.city
+               FROM users u JOIN freelancer_profiles fp ON fp.user_id = u.id
+               WHERE u.role = 'freelancer'""").fetchall():
+        c = dict(r)
+        c["skills"] = [s for s in (c["skills"] or "").strip(",").split(",") if s]
+        if skill in ROLES and skill not in c["skills"]:
+            continue
+        if q and q not in c["name"].lower() and q not in (c["city"] or "").lower():
+            continue
+        if price_v and not (0 < (c["rate"] or 0) <= price_v):
+            continue
+        c["avg"], c["rcount"] = avg_rating(db, c["id"])
+        if rating_v and (c["rcount"] == 0 or c["avg"] < rating_v):
+            continue
+        ph = db.execute("SELECT id FROM portfolio_photos WHERE user_id = ? ORDER BY id LIMIT 1",
+                        (c["id"],)).fetchone()
+        c["photo_id"] = ph["id"] if ph else None
+        c["saved"] = bool(db.execute(
+            "SELECT 1 FROM favorites WHERE user_id = ? AND target_user_id = ?",
+            (u["id"], c["id"])).fetchone())
+        out.append(c)
+    out.sort(key=lambda c: (-(c["avg"] or 0), c["name"].lower()))
+    return render_template("creators.html", user=u, creators=out,
+                           q=request.args.get("q", "").strip(),
+                           skill=skill, price=price, rating=rating)
+
+
+@app.route("/api/favorite", methods=["POST"])
+@login_required
+def api_favorite():
+    u = current_user()
+    db = get_db()
+    data = request.get_json(force=True, silent=True) or {}
+    ftype = data.get("type")
+    try:
+        target = int(data.get("id"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False}), 400
+    if ftype == "user":
+        if not db.execute("SELECT 1 FROM users WHERE id = ?", (target,)).fetchone():
+            return jsonify({"ok": False}), 404
+        if db.execute("SELECT 1 FROM favorites WHERE user_id = ? AND target_user_id = ?",
+                      (u["id"], target)).fetchone():
+            db.execute("DELETE FROM favorites WHERE user_id = ? AND target_user_id = ?",
+                       (u["id"], target))
+            saved = False
+        else:
+            db.execute("INSERT INTO favorites (user_id, target_user_id) VALUES (?,?)",
+                       (u["id"], target))
+            saved = True
+        db.commit()
+        return jsonify({"ok": True, "saved": saved})
+    if ftype == "event":
+        if not db.execute("SELECT 1 FROM events WHERE id = ?", (target,)).fetchone():
+            return jsonify({"ok": False}), 404
+        if db.execute("SELECT 1 FROM event_favorites WHERE user_id = ? AND event_id = ?",
+                      (u["id"], target)).fetchone():
+            db.execute("DELETE FROM event_favorites WHERE user_id = ? AND event_id = ?",
+                       (u["id"], target))
+            saved = False
+        else:
+            db.execute("INSERT INTO event_favorites (user_id, event_id) VALUES (?,?)",
+                       (u["id"], target))
+            saved = True
+        db.commit()
+        return jsonify({"ok": True, "saved": saved})
+    return jsonify({"ok": False}), 400
+
+
+@app.route("/saved")
+@login_required
+def saved_page():
+    u = current_user()
+    db = get_db()
+    if u["role"] == "studio":
+        items = []
+        for r in db.execute(
+                """SELECT u.id, u.name, u.phone, fp.skills, fp.rate, fp.city
+                   FROM favorites f JOIN users u ON u.id = f.target_user_id
+                   LEFT JOIN freelancer_profiles fp ON fp.user_id = u.id
+                   WHERE f.user_id = ? ORDER BY u.name""", (u["id"],)).fetchall():
+            c = dict(r)
+            c["avg"], c["rcount"] = avg_rating(db, c["id"])
+            c["skills"] = [s for s in (c["skills"] or "").strip(",").split(",") if s]
+            ph = db.execute("SELECT id FROM portfolio_photos WHERE user_id = ? ORDER BY id LIMIT 1",
+                            (c["id"],)).fetchone()
+            c["photo_id"] = ph["id"] if ph else None
+            items.append(c)
+        return render_template("saved.html", user=u, freelancers=items)
+    events = []
+    for r in db.execute(
+            """SELECT e.* FROM event_favorites ef JOIN events e ON e.id = ef.event_id
+               WHERE ef.user_id = ? ORDER BY e.event_date""", (u["id"],)).fetchall():
+        events.append(event_with_roles(r))
+    studios = []
+    for r in db.execute(
+            """SELECT u.id, u.name, u.phone, u.instagram_url, u.youtube_url
+               FROM favorites f JOIN users u ON u.id = f.target_user_id
+               WHERE f.user_id = ? AND u.role = 'studio' ORDER BY u.name""",
+            (u["id"],)).fetchall():
+        studios.append(dict(r))
+    return render_template("saved.html", user=u, events=events, studios=studios)
+
+
+@app.route("/s/<int:user_id>")
+@login_required
+def studio_public(user_id):
+    """Public profile of a studio (for freelancers)."""
+    u = current_user()
+    db = get_db()
+    st = db.execute("SELECT * FROM users WHERE id = ? AND role = 'studio'",
+                    (user_id,)).fetchone()
+    if not st:
+        flash("Studio not found.", "error")
+        return redirect(url_for("landing"))
+    today = TODAY().isoformat()
+    evts = []
+    for r in db.execute(
+            """SELECT * FROM events WHERE studio_id = ? AND event_date >= ?
+               ORDER BY event_date LIMIT 10""", (user_id, today)).fetchall():
+        evts.append(event_with_roles(r))
+    is_saved = bool(db.execute(
+        "SELECT 1 FROM favorites WHERE user_id = ? AND target_user_id = ?",
+        (u["id"], user_id)).fetchone())
+    return render_template("studio_public.html", user=u, st=st, events=evts,
+                           is_saved=is_saved)
+
+
+@app.route("/booking/<int:booking_id>")
+@login_required
+def booking_summary(booking_id):
+    u = current_user()
+    db = get_db()
+    b = db.execute(
+        """SELECT b.*, e.title, e.event_date, e.end_date, e.location, e.district,
+                  e.studio_id, e.details
+           FROM bookings b JOIN events e ON e.id = b.event_id
+           WHERE b.id = ?""", (booking_id,)).fetchone()
+    if not b:
+        flash("Booking not found.", "error")
+        return redirect(url_for("landing"))
+    if u["role"] == "studio" and b["studio_id"] != u["id"]:
+        flash("That booking belongs to another studio.", "error")
+        return redirect(url_for("studio_home"))
+    if u["role"] == "freelancer" and b["freelancer_id"] != u["id"]:
+        flash("That booking belongs to someone else.", "error")
+        return redirect(url_for("freelancer_home"))
+    b = dict(b)
+    b["date_str"] = event_date_str(b)
+    b["role"] = role_label(b["role_key"])
+    studio = db.execute("SELECT name, phone FROM users WHERE id = ?",
+                        (b["studio_id"],)).fetchone()
+    fr = db.execute("SELECT name, phone FROM users WHERE id = ?",
+                    (b["freelancer_id"],)).fetchone()
+    fp = db.execute("SELECT rate, upi_id FROM freelancer_profiles WHERE user_id = ?",
+                    (b["freelancer_id"],)).fetchone()
+    b["studio_name"] = studio["name"]
+    b["studio_phone"] = studio["phone"] or ""
+    b["freelancer_name"] = fr["name"]
+    b["freelancer_phone"] = fr["phone"] or ""
+    b["rate"] = fp["rate"] if fp else 0
+    b["upi_id"] = (fp["upi_id"] if fp and fp["upi_id"] else "")
+    return render_template("booking_summary.html", user=u, b=b)
+
+
+@app.route("/messages")
+@login_required
+def messages_page():
+    u = current_user()
+    db = get_db()
+    convs = {}
+    for m in db.execute(
+            """SELECT * FROM messages WHERE sender_id = ? OR receiver_id = ?
+               ORDER BY id""", (u["id"], u["id"])).fetchall():
+        other = m["receiver_id"] if m["sender_id"] == u["id"] else m["sender_id"]
+        c = convs.setdefault(other, {"user_id": other, "unread": 0})
+        c["last"] = m["body"]
+        c["last_time"] = (m["created_at"] or "")[:16]
+        if m["receiver_id"] == u["id"] and not m["is_read"]:
+            c["unread"] += 1
+    out = []
+    for oid, c in convs.items():
+        other = db.execute("SELECT name, role FROM users WHERE id = ?", (oid,)).fetchone()
+        c["name"] = other["name"] if other else "Unknown"
+        c["role"] = other["role"] if other else ""
+        out.append(c)
+    out.sort(key=lambda c: c.get("last_time") or "", reverse=True)
+    return render_template("messages.html", user=u, convs=out)
+
+
+@app.route("/messages/<int:other_id>")
+@login_required
+def chat_page(other_id):
+    u = current_user()
+    db = get_db()
+    if other_id == u["id"]:
+        return redirect(url_for("messages_page"))
+    other = db.execute("SELECT * FROM users WHERE id = ?", (other_id,)).fetchone()
+    if not other:
+        flash("User not found.", "error")
+        return redirect(url_for("messages_page"))
+    return render_template("chat.html", user=u, other=other)
+
+
+@app.route("/api/messages/<int:other_id>", methods=["GET", "POST"])
+@login_required
+def api_messages(other_id):
+    u = current_user()
+    db = get_db()
+    if not db.execute("SELECT 1 FROM users WHERE id = ?", (other_id,)).fetchone():
+        return jsonify({"ok": False}), 404
+    if request.method == "POST":
+        data = request.get_json(force=True, silent=True) or {}
+        body = (data.get("body") or "").strip()
+        if not body:
+            return jsonify({"ok": False, "error": "empty"}), 400
+        db.insert("INSERT INTO messages (sender_id, receiver_id, body) VALUES (?,?,?)",
+                  (u["id"], other_id, body[:2000]))
+        db.commit()
+        try:
+            notify(other_id, f"New message from {u['name']}", f"/messages/{u['id']}")
+        except Exception:
+            pass
+        return jsonify({"ok": True})
+    after = request.args.get("after", 0, type=int)
+    if after:
+        rows = db.execute(
+            """SELECT * FROM messages
+               WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+                 AND id > ? ORDER BY id""", (u["id"], other_id, other_id, u["id"], after)).fetchall()
+    else:
+        rows = list(reversed(db.execute(
+            """SELECT * FROM messages
+               WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+               ORDER BY id DESC LIMIT 60""", (u["id"], other_id, other_id, u["id"])).fetchall()))
+        db.execute("""UPDATE messages SET is_read = 1
+                     WHERE sender_id = ? AND receiver_id = ? AND is_read = 0""",
+                   (other_id, u["id"]))
+        db.commit()
+    msgs = [{"id": m["id"], "mine": m["sender_id"] == u["id"],
+             "body": m["body"], "t": (m["created_at"] or "")[11:16]} for m in rows]
+    return jsonify({"ok": True, "messages": msgs})
 
 
 @app.route("/admin")
@@ -1422,8 +1843,22 @@ def admin_login():
     a = db.execute("SELECT * FROM admins WHERE username = ?", (username,)).fetchone()
     if a and check_password_hash(a["password_hash"], password):
         session["admin"] = True
+        session["admin_user"] = a["username"]
+        session["admin_perms"] = "all"
         flash("Welcome back, Super Admin!", "success")
         return redirect(url_for("admin_dashboard"))
+    s = db.execute("SELECT * FROM staff_admins WHERE username = ?", (username,)).fetchone()
+    if s and check_password_hash(s["password_hash"], password):
+        session["admin"] = True
+        session["admin_user"] = s["username"]
+        session["admin_perms"] = s["perms"] or ""
+        flash(f"Welcome, {s['username']}!", "success")
+        if "dashboard" in admin_perms():
+            return redirect(url_for("admin_dashboard"))
+        for p, ep in (("users", "admin_users"), ("events", "admin_events"), ("bookings", "admin_bookings")):
+            if p in admin_perms():
+                return redirect(url_for(ep))
+        return redirect(url_for("admin_settings"))
     flash("Wrong admin username or password.", "error")
     return redirect(url_for("admin_page"))
 
@@ -1431,12 +1866,15 @@ def admin_login():
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin", None)
+    session.pop("admin_user", None)
+    session.pop("admin_perms", None)
     flash("Admin logged out.", "success")
     return redirect(url_for("admin_page"))
 
 
 @app.route("/admin/dashboard")
 @admin_required
+@requires_perm("dashboard")
 def admin_dashboard():
     db = get_db()
     stats = {
@@ -1486,10 +1924,18 @@ def admin_dashboard():
 
 @app.route("/admin/users")
 @admin_required
+@requires_perm("users")
 def admin_users():
     db = get_db()
+    role_filter = request.args.get("role", "").strip()
     users = []
-    for u in db.execute("SELECT * FROM users ORDER BY id"):
+    q = "SELECT * FROM users"
+    if role_filter in ("studio", "freelancer"):
+        q += " WHERE role = ?"
+        rows = db.execute(q + " ORDER BY id", (role_filter,)).fetchall()
+    else:
+        rows = db.execute(q + " ORDER BY id").fetchall()
+    for u in rows:
         u = dict(u)
         if u["role"] == "freelancer":
             p = db.execute("SELECT * FROM freelancer_profiles WHERE user_id = ?",
@@ -1503,6 +1949,7 @@ def admin_users():
 
 @app.route("/admin/user/<int:user_id>", methods=["GET", "POST"])
 @admin_required
+@requires_perm("users")
 def admin_user_edit(user_id):
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
@@ -1589,11 +2036,22 @@ def admin_user_edit(user_id):
 
 @app.route("/admin/events")
 @admin_required
+@requires_perm("events")
 def admin_events():
     db = get_db()
+    f_status = request.args.get("status", "").strip()
+    f_district = request.args.get("district", "").strip()
     events = []
-    for r in db.execute("SELECT e.*, u.name AS studio_name FROM events e "
-                        "JOIN users u ON u.id = e.studio_id ORDER BY e.event_date DESC"):
+    q = "SELECT e.*, u.name AS studio_name FROM events e JOIN users u ON u.id = e.studio_id WHERE 1=1"
+    params = []
+    if f_status in ("open", "closed"):
+        q += " AND e.status = ?"
+        params.append(f_status)
+    if f_district in TN_DISTRICTS:
+        q += " AND e.district = ?"
+        params.append(f_district)
+    rows = db.execute(q + " ORDER BY e.event_date DESC", params).fetchall()
+    for r in rows:
         ev = dict(r)
         ev["roles"] = [dict(x) for x in db.execute(
             "SELECT * FROM event_roles WHERE event_id = ?", (ev["id"],))]
@@ -1601,11 +2059,14 @@ def admin_events():
             "SELECT COUNT(*) FROM bookings WHERE event_id = ?",
             (ev["id"],)).fetchone()[0]
         events.append(ev)
-    return render_template("admin_events.html", events=events)
+    return render_template("admin_events.html", events=events,
+                           f_status=f_status, f_district=f_district,
+                           district_opts=TN_DISTRICTS)
 
 
 @app.route("/admin/event/<int:event_id>", methods=["GET", "POST"])
 @admin_required
+@requires_perm("events")
 def admin_event_edit(event_id):
     db = get_db()
     ev = db.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
@@ -1664,6 +2125,7 @@ def admin_event_edit(event_id):
 
 @app.route("/admin/bookings")
 @admin_required
+@requires_perm("bookings")
 def admin_bookings():
     db = get_db()
     bookings = []
@@ -1681,6 +2143,7 @@ def admin_bookings():
 
 @app.route("/admin/booking/<int:booking_id>", methods=["POST"])
 @admin_required
+@requires_perm("bookings")
 def admin_booking_update(booking_id):
     db = get_db()
     b = db.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
@@ -1706,8 +2169,43 @@ def admin_booking_update(booking_id):
 @app.route("/admin/settings", methods=["GET", "POST"])
 @admin_required
 def admin_settings():
+    if not is_super_admin():
+        flash("Only the super admin can open settings.", "error")
+        for p, ep in (("dashboard", "admin_dashboard"), ("users", "admin_users"),
+                      ("events", "admin_events"), ("bookings", "admin_bookings")):
+            if p in admin_perms():
+                return redirect(url_for(ep))
+        return redirect(url_for("admin_page"))
+    return _admin_settings_impl()
+
+
+def _admin_settings_impl():
     db = get_db()
     admin = db.execute("SELECT * FROM admins ORDER BY id LIMIT 1").fetchone()
+    if request.method == "POST" and request.form.get("action") == "staff_new":
+        suser = request.form.get("staff_username", "").strip().lower()
+        spass = request.form.get("staff_password", "")
+        perms = ",".join(p for p in request.form.getlist("perms")
+                         if p in ("dashboard", "users", "events", "bookings"))
+        if not suser or len(spass) < 6:
+            flash("Staff username + password (min 6 chars) required.", "error")
+        elif db.execute("SELECT 1 FROM staff_admins WHERE username = ?", (suser,)).fetchone() \
+                or db.execute("SELECT 1 FROM admins WHERE username = ?", (suser,)).fetchone():
+            flash("That username is already taken.", "error")
+        elif not perms:
+            flash("Pick at least one section for the staff account.", "error")
+        else:
+            db.insert("INSERT INTO staff_admins (username, password_hash, perms) VALUES (?,?,?)",
+                      (suser, generate_password_hash(spass), perms))
+            db.commit()
+            flash(f"Staff account '{suser}' created.", "success")
+        return redirect(url_for("admin_settings"))
+    if request.method == "POST" and request.form.get("action") == "staff_del":
+        sid = request.form.get("staff_id", 0, type=int)
+        db.execute("DELETE FROM staff_admins WHERE id = ?", (sid,))
+        db.commit()
+        flash("Staff account removed.", "success")
+        return redirect(url_for("admin_settings"))
     if request.method == "POST" and request.form.get("action") == "social":
         for k in SOCIAL_KEYS:
             v = request.form.get(k, "").strip()
@@ -1741,8 +2239,10 @@ def admin_settings():
             flash("Admin login updated. Use the new details next time.", "success")
             return redirect(url_for("admin_page"))
         return redirect(url_for("admin_settings"))
+    staff = db.execute("SELECT * FROM staff_admins ORDER BY id").fetchall()
     return render_template("admin_settings.html", admin_username=admin["username"],
-                           social={k: get_setting(db, k) for k in SOCIAL_KEYS})
+                           social={k: get_setting(db, k) for k in SOCIAL_KEYS},
+                           staff=staff)
 
 
 if __name__ == "__main__":

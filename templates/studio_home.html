@@ -1,105 +1,113 @@
 {% extends "base.html" %}
-{% block title %}My Events{% endblock %}
+{% block title %}Home{% endblock %}
 {% block content %}
 
 <section class="page-head">
   <div>
     <h1>Vanakkam, {{ user['name'] }} 👋</h1>
-    <p>Your events and crew — create an event from the menu (➕ Create event) anytime.</p>
+    <p>Your event calendar, crew availability and events — all in one place.</p>
   </div>
 </section>
 
-<div class="card">
-  <h2>📋 My events <span class="count-chip">{{ events|length }}</span></h2>
-  {% if not events %}
-    <div class="empty">No events yet — post your first event below.</div>
-  {% endif %}
-  {% for ev in events %}
-    <div class="event-card">
-      <div class="event-head">
-        <div>
-          <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
-          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %} ·
-            <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
-          </div>
-        </div>
-        <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
+<div class="dash-grid">
+  <div class="dash-col">
+    <div class="card">
+      <h2>📅 My event calendar</h2>
+      <p class="hint">Orange = your events · Blue = your noted (outside app) events. Tap a marked date to see details.</p>
+      <div class="cal-toolbar">
+        <button class="btn btn-outline btn-sm" id="scal-prev">‹</button>
+        <strong id="scal-title"></strong>
+        <button class="btn btn-outline btn-sm" id="scal-next">›</button>
       </div>
-      {% for role in ev['roles'] %}
-        <div class="role-row">
-          <span class="badge badge-role">{{ role['label'] }}</span>
-          {% if role['filled'] %}
-            {% for b in role['bookings'] if b['status'] == 'booked' %}
-              <span class="badge badge-ok">✓ {{ b['freelancer_name'] }}</span>
-            {% endfor %}
-          {% else %}
-            <span class="badge badge-wait">Open</span>
-            {% set applicants = role['bookings'] | selectattr('status', 'in', ['applied']) | list %}
-            {% if applicants %}
-              <span class="hint">{{ applicants|length }} applied:</span>
-              {% for b in applicants %}
-                <form method="post" action="{{ url_for('respond') }}" class="inline person-chip">
-                  <input type="hidden" name="booking_id" value="{{ b['id'] }}">
-                  <span class="chip-name">{{ b['freelancer_name'] }}</span>
-                  <button class="btn btn-primary btn-xs" name="action" value="accept">Book</button>
-                  <button class="btn btn-ghost btn-xs" name="action" value="decline">✕</button>
-                </form>
+      <div id="studio-cal" class="calendar" data-cal="{{ cal_data }}"></div>
+      <div class="cal-legend">
+        <span><i class="dot dot-ev"></i> Events</span>
+        <span><i class="dot dot-note"></i> Noted events</span>
+        <span><i class="dot today"></i> Today</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🤝 Crew free on my upcoming events</h2>
+      <p class="hint">Freelancers who marked these dates available.</p>
+      {% if not crew %}
+        <div class="empty">No upcoming events yet — create one from the menu (➕ Create event).</div>
+      {% endif %}
+      {% for c in crew %}
+        <div class="crew-block">
+          <a class="event-title" href="{{ url_for('event_detail', event_id=c.ev['id']) }}">{{ c.ev['title'] }}</a>
+          <div class="event-meta">{{ event_date_str(c.ev) }}{% if c.ev['district'] %} · 🗺 {{ c.ev['district'] }}{% endif %}</div>
+          {% if c.freelancers %}
+            <div class="badges">
+              {% for f in c.freelancers %}
+                <a class="person-chip" href="{{ url_for('public_profile', user_id=f['id']) }}">
+                  <span class="chip-name">{{ f['name'] }}{% if f['rate'] %} · ₹{{ f['rate'] }}{% endif %}</span>
+                </a>
               {% endfor %}
-            {% endif %}
+            </div>
+          {% else %}
+            <div class="event-meta">No matching freelancers free on these dates yet.</div>
           {% endif %}
         </div>
       {% endfor %}
-      <div class="event-actions">
-        <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">View free freelancers →</a>
-        {% if ev['status'] == 'open' %}
-          <form method="post" action="{{ url_for('respond') }}" class="inline"
-                onsubmit="return confirm('Close this event? No new applications can come in.')">
-            <input type="hidden" name="event_id" value="{{ ev['id'] }}">
-            <button class="btn btn-ghost btn-sm" name="action" value="close_event">Close event</button>
-          </form>
-        {% endif %}
-      </div>
     </div>
-  {% endfor %}
-</div>
+  </div>
 
-<div class="card" id="post">
-  <h2>➕ Create event</h2>
-  <form method="post" action="{{ url_for('post_event') }}" class="post-form">
-    <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr">
-      <label>Event name *
-        <input type="text" name="title" required placeholder="e.g. Priya & Karthik — Wedding">
-      </label>
-      <label>Event date *
-        <input type="date" name="event_date" required>
-      </label>
-      <label>End date <span class="hint">(multi-day events)</span>
-        <input type="date" name="end_date">
-      </label>
-    </div>
-    <div class="form-row" style="grid-template-columns:1.6fr 1fr">
-      <label>Location
-        <input type="text" name="location" placeholder="e.g. Mahal, Trichy Road, Coimbatore">
-      </label>
-      <label>District
-        <select name="district">
-          <option value="">— select district —</option>
-          {% for d in TN_DISTRICTS %}
-            <option value="{{ d }}">{{ d }}</option>
+  <div class="dash-col wide">
+    <div class="card">
+      <h2>📋 My events <span class="count-chip">{{ events|length }}</span></h2>
+      {% if not events %}
+        <div class="empty">No events yet — create one from the menu (➕ Create event).</div>
+      {% endif %}
+      {% for ev in events %}
+        <div class="event-card">
+          <div class="event-head">
+            <div>
+              <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
+              <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %} ·
+                <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
+              </div>
+            </div>
+            <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
+          </div>
+          {% for role in ev['roles'] %}
+            <div class="role-row">
+              <span class="badge badge-role">{{ role['label'] }}</span>
+              {% if role['filled'] %}
+                {% for b in role['bookings'] if b['status'] == 'booked' %}
+                  <span class="badge badge-ok">✓ {{ b['freelancer_name'] }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="badge badge-wait">Open</span>
+                {% set applicants = role['bookings'] | selectattr('status', 'in', ['applied']) | list %}
+                {% if applicants %}
+                  <span class="hint">{{ applicants|length }} applied:</span>
+                  {% for b in applicants %}
+                    <form method="post" action="{{ url_for('respond') }}" class="inline person-chip">
+                      <input type="hidden" name="booking_id" value="{{ b['id'] }}">
+                      <span class="chip-name">{{ b['freelancer_name'] }}</span>
+                      <button class="btn btn-primary btn-xs" name="action" value="accept">Book</button>
+                      <button class="btn btn-ghost btn-xs" name="action" value="decline">✕</button>
+                    </form>
+                  {% endfor %}
+                {% endif %}
+              {% endif %}
+            </div>
           {% endfor %}
-        </select>
-      </label>
-    </div>
-    <label>Event details
-      <textarea name="details" rows="2" placeholder="Reception at 6 PM, 2 cameras needed…"></textarea>
-    </label>
-    <label>Crew needed <span class="hint">(pick all that apply — traditional, candid, drone pilot, live streamer, LED wall…)</span></label>
-    <div class="skill-grid">
-      {% for key, label in ROLES.items() %}
-        <label class="check"><input type="checkbox" name="roles" value="{{ key }}"> {{ label }}</label>
+          <div class="event-actions">
+            <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=ev['id']) }}">View free freelancers →</a>
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('studio_post_page', copy=ev['id']) }}" title="Create a copy of this event">🔁 Copy</a>
+            {% if ev['status'] == 'open' %}
+              <form method="post" action="{{ url_for('respond') }}" class="inline"
+                    onsubmit="return confirm('Close this event? No new applications can come in.')">
+                <input type="hidden" name="event_id" value="{{ ev['id'] }}">
+                <button class="btn btn-ghost btn-sm" name="action" value="close_event">Close event</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
       {% endfor %}
     </div>
-    <button class="btn btn-cta" type="submit">Post event & find crew</button>
-  </form>
+  </div>
 </div>
 {% endblock %}

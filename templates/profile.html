@@ -17,6 +17,14 @@
     <label>Phone (WhatsApp)
       <input type="tel" name="phone" value="{{ user['phone'] or '' }}" placeholder="98XXXXXXXX">
     </label>
+    <div class="form-row">
+      <label>Instagram page link
+        <input type="text" name="instagram_url" value="{{ user['instagram_url'] or '' }}" placeholder="https://instagram.com/yourpage">
+      </label>
+      <label>YouTube page link
+        <input type="text" name="youtube_url" value="{{ user['youtube_url'] or '' }}" placeholder="https://youtube.com/@yourchannel">
+      </label>
+    </div>
     <label>My skills *</label>
     <div class="skill-grid">
       {% for key, label in ROLES.items() %}

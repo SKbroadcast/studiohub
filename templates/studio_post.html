@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Create Event{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>➕ Create event</h1>
+    <p>Post an event with the crew you need — freelancers free on those dates will see it instantly.</p>
+  </div>
+  <a class="btn btn-ghost" href="{{ url_for('studio_home') }}">← Back to home</a>
+</section>
+
+<div class="card">
+  {% if pre %}
+    <p class="hint">Copying details from "<b>{{ pre['title'] }}</b>" — change the dates and post.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('studio_post_page') }}" class="post-form">
+    <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr">
+      <label>Event name *
+        <input type="text" name="title" required value="{{ pre['title'] if pre else '' }}" placeholder="e.g. Priya & Karthik — Wedding">
+      </label>
+      <label>Event date *
+        <input type="date" name="event_date" required value="">
+      </label>
+      <label>End date <span class="hint">(multi-day events)</span>
+        <input type="date" name="end_date" value="">
+      </label>
+    </div>
+    <div class="form-row" style="grid-template-columns:1.6fr 1fr">
+      <label>Location
+        <input type="text" name="location" value="{{ pre['location'] if pre else '' }}" placeholder="e.g. Mahal, Trichy Road, Coimbatore">
+      </label>
+      <label>District
+        <select name="district">
+          <option value="">— select district —</option>
+          {% for d in TN_DISTRICTS %}
+            <option value="{{ d }}" {{ 'selected' if pre and pre['district'] == d }}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <label>Event details
+      <textarea name="details" rows="2" placeholder="Reception at 6 PM, 2 cameras needed…">{{ pre['details'] if pre else '' }}</textarea>
+    </label>
+    <label>Crew needed <span class="hint">(pick all that apply — traditional, candid, drone pilot, live streamer, LED wall…)</span></label>
+    <div class="skill-grid">
+      {% for key, label in ROLES.items() %}
+        <label class="check"><input type="checkbox" name="roles" value="{{ key }}"> {{ label }}</label>
+      {% endfor %}
+    </div>
+    <button class="btn btn-cta" type="submit">Post event & find crew</button>
+  </form>
+</div>
+{% endblock %}

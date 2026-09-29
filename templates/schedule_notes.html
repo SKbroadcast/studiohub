@@ -51,7 +51,55 @@
           {% if b['advance_amount'] %}
             <div class="event-meta">💰 Advance ₹{{ b['advance_amount'] }} — {{ '✅ paid' if b['advance_paid'] else '⏳ not paid yet' }}</div>
           {% endif %}
+          <div class="event-meta"><a href="{{ url_for('booking_summary', booking_id=b['id']) }}">View summary →</a></div>
         </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>📝 Noted events <span class="hint">(outside the app)</span> <span class="count-chip">{{ notes_upcoming|length + (notes_past|length if notes_past is defined else 0) }}</span></h2>
+  <p class="hint">Booked somewhere else? Note it here so it shows in your schedule{% if not studio_view %} and in My Availability as booked{% endif %}.</p>
+  <form method="post" action="{{ url_for('note_events_page') }}" class="post-form">
+    <div class="form-row" style="grid-template-columns:1.4fr 1fr 1fr">
+      <label>Function name *
+        <input type="text" name="title" required placeholder="e.g. Ramesh — Reception (direct booking)">
+      </label>
+      <label>Date *
+        <input type="date" name="event_date" required>
+      </label>
+      <label>Location
+        <input type="text" name="location" placeholder="e.g. Convention Hall, Madurai">
+      </label>
+    </div>
+    <button class="btn btn-primary btn-sm" type="submit">Add note</button>
+  </form>
+  {% if notes_upcoming %}
+    {% for n in notes_upcoming %}
+      <div class="note-row" style="margin-top:.6rem">
+        <div class="note-date">{{ n['event_date'] }}</div>
+        <div class="note-body">
+          <b>{{ n['title'] }}</b>{% if n['location'] %} · 📍 {{ n['location'] }}{% endif %}
+          {% if n['notes'] %}<div class="event-meta">{{ n['notes'] }}</div>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('note_event_delete', note_id=n['id']) }}" class="inline"
+              onsubmit="return confirm('Remove this note?')">
+          <button class="btn btn-ghost btn-xs">✕</button>
+        </form>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty" style="margin-top:.6rem">No upcoming noted events.</div>
+  {% endif %}
+  {% if notes_past %}
+    {% for n in notes_past %}
+      <div class="note-row past" style="margin-top:.6rem">
+        <div class="note-date">{{ n['event_date'] }}</div>
+        <div class="note-body"><b>{{ n['title'] }}</b>{% if n['location'] %} · 📍 {{ n['location'] }}{% endif %}</div>
+        <form method="post" action="{{ url_for('note_event_delete', note_id=n['id']) }}" class="inline">
+          <button class="btn btn-ghost btn-xs">✕</button>
+        </form>
       </div>
     {% endfor %}
   {% endif %}

@@ -19,6 +19,12 @@
     <label>Phone
       <input type="text" name="phone" value="{{ user['phone'] or '' }}" placeholder="98XXXXXXXX">
     </label>
+    <label>Instagram page link
+      <input type="text" name="instagram_url" value="{{ user['instagram_url'] or '' }}" placeholder="https://instagram.com/yourpage">
+    </label>
+    <label>YouTube page link
+      <input type="text" name="youtube_url" value="{{ user['youtube_url'] or '' }}" placeholder="https://youtube.com/@yourchannel">
+    </label>
     <button class="btn btn-primary" type="submit">Save changes</button>
   </form>
   <hr style="border:none;border-top:1px dashed var(--border);margin:1.1rem 0">

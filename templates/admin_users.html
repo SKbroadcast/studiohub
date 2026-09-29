@@ -4,6 +4,20 @@
 <p>Edit or delete any account</p></div>
 
 <div class="card">
+  <form method="get" action="{{ url_for('admin_users') }}" class="filter-bar">
+    <label>Role
+      <select name="role">
+        <option value="">All</option>
+        <option value="studio" {{ 'selected' if request.args.get('role') == 'studio' }}>Studios</option>
+        <option value="freelancer" {{ 'selected' if request.args.get('role') == 'freelancer' }}>Freelancers</option>
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">Filter</button>
+    <a class="btn btn-ghost" href="{{ url_for('admin_users') }}">Clear</a>
+  </form>
+</div>
+
+<div class="card">
   {% if not users %}
     <div class="empty">No users yet.</div>
   {% else %}

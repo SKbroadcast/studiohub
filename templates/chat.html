@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Chat with {{ other['name'] }}{% endblock %}
+{% block content %}
+<section class="page-head chat-head">
+  <div>
+    <a href="{{ url_for('messages_page') }}" class="btn btn-ghost btn-sm">← All messages</a>
+    <h1 style="margin-top:.4rem">💬 {{ other['name'] }}</h1>
+    <p>{{ 'Studio' if other['role'] == 'studio' else 'Freelancer' }}{% if other['phone'] %} · <a href="tel:{{ other['phone'] }}">{{ other['phone'] }} 📞</a>{% endif %}</p>
+  </div>
+</section>
+
+<div class="card chat-card">
+  <div id="chat-box" class="chat-box" data-other="{{ other['id'] }}"></div>
+  <form id="chat-form" class="chat-input" autocomplete="off">
+    <input type="text" id="chat-text" placeholder="Type a message…" maxlength="2000">
+    <button class="btn btn-primary" type="submit">Send</button>
+  </form>
+</div>
+{% endblock %}

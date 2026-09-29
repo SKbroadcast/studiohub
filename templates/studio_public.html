@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ st['name'] }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>🏢 {{ st['name'] }}</h1>
+    <p>Studio · {{ 'Member since ' + st['created_at'][:10] if st['created_at'] else 'Studio' }}</p>
+    <div class="event-actions" style="margin-top:.6rem">
+      {% if st['instagram_url'] %}<a class="btn btn-outline btn-sm" href="{{ st['instagram_url'] }}" target="_blank" rel="noopener">📷 Instagram</a>{% endif %}
+      {% if st['youtube_url'] %}<a class="btn btn-outline btn-sm" href="{{ st['youtube_url'] }}" target="_blank" rel="noopener">▶️ YouTube</a>{% endif %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('chat_page', other_id=st['id']) }}">💬 Message</a>
+      <button class="btn btn-outline btn-sm fav-btn {{ 'fav-on' if is_saved }}" data-fav-type="user" data-fav-id="{{ st['id'] }}">⭐ Save studio</button>
+    </div>
+  </div>
+</section>
+
+<div class="card">
+  <h2>🎬 Upcoming events by this studio</h2>
+  {% if not events %}
+    <div class="empty">No upcoming events from this studio right now.</div>
+  {% endif %}
+  {% for ev in events %}
+    <div class="event-card">
+      <div class="event-head">
+        <div>
+          {% if user['role'] == 'freelancer' %}
+            <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
+          {% else %}
+            <span class="event-title">{{ ev['title'] }}</span>
+          {% endif %}
+          <div class="event-meta">📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %}</div>
+        </div>
+        <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
+      </div>
+      <div class="badges">
+        {% for role in ev['roles'] %}
+          <span class="badge badge-role">{{ role['label'] }}</span>
+          {% if role['filled'] %}<span class="badge badge-ok">✓ filled</span>
+          {% elif user['role'] == 'freelancer' %}<span class="badge badge-wait">open</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

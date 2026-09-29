@@ -23,6 +23,48 @@
   </form>
 </div>
 
+<div class="card" style="max-width:640px">
+  <h2>👷 Staff admin accounts</h2>
+  <p class="hint">Create accounts for people who help you manage StudioHub. Pick exactly what they can see.</p>
+  <form method="post" action="{{ url_for('admin_settings') }}">
+    <input type="hidden" name="action" value="staff_new">
+    <div class="form-row" style="grid-template-columns:1fr 1fr">
+      <label>Staff username
+        <input type="text" name="staff_username" required placeholder="e.g. manager1">
+      </label>
+      <label>Password <span class="hint">(min 6 chars)</span>
+        <input type="password" name="staff_password" required minlength="6">
+      </label>
+    </div>
+    <label>What can this staff account do?</label>
+    <div class="skill-grid" style="grid-template-columns:1fr 1fr">
+      <label class="check"><input type="checkbox" name="perms" value="dashboard"> Dashboard & reports</label>
+      <label class="check"><input type="checkbox" name="perms" value="users"> Users</label>
+      <label class="check"><input type="checkbox" name="perms" value="events"> Events</label>
+      <label class="check"><input type="checkbox" name="perms" value="bookings"> Bookings</label>
+    </div>
+    <button class="btn btn-primary" type="submit">Create staff account</button>
+  </form>
+  {% if staff %}
+    <div style="margin-top:1rem">
+      {% for s in staff %}
+        <div class="booking-row">
+          <div>
+            <b>{{ s['username'] }}</b>
+            <div class="event-meta">Access: {{ s['perms']|replace(',', ' · ') or 'nothing' }}</div>
+          </div>
+          <form method="post" action="{{ url_for('admin_settings') }}" class="inline"
+                onsubmit="return confirm('Remove staff account {{ s['username'] }}?')">
+            <input type="hidden" name="action" value="staff_del">
+            <input type="hidden" name="staff_id" value="{{ s['id'] }}">
+            <button class="btn btn-ghost btn-sm">Remove</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
 <div class="card" style="max-width:520px">
   <h2>Admin login</h2>
   <form method="post" action="{{ url_for('admin_settings') }}">

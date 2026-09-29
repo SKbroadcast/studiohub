@@ -43,11 +43,14 @@
       <div class="event-head">
         <div>
           <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
-          <div class="event-meta">🏢 {{ ev['studio_name'] }} · 📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %}
+          <div class="event-meta">🏢 <a href="{{ url_for('studio_public', user_id=ev['studio_id']) }}" style="color:var(--primary-soft)">{{ ev['studio_name'] }}</a> · 📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %}
             {% if user['role'] == 'studio' and ev['studio_id'] == user['id'] %} · <b>your event</b>{% endif %}
           </div>
         </div>
         <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
+        {% if user['role'] == 'freelancer' %}
+          <button class="btn btn-outline btn-xs fav-btn {{ 'fav-on' if ev['is_saved'] }}" data-fav-type="event" data-fav-id="{{ ev['id'] }}" title="Save event">⭐</button>
+        {% endif %}
       </div>
       <div class="badges">
         {% for role in ev['roles'] %}

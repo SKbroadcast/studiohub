@@ -14,6 +14,14 @@
       {% if rating_count %} · <b>{{ stars_str(avg) }}</b> {{ avg }} ({{ rating_count }}){% endif %}
     </p>
     {% if profile and profile['bio'] %}<p class="hint">{{ profile['bio'] }}</p>{% endif %}
+    <div class="event-actions">
+      {% if fr['instagram_url'] %}<a class="btn btn-outline btn-sm" href="{{ fr['instagram_url'] }}" target="_blank" rel="noopener">📷 Instagram</a>{% endif %}
+      {% if fr['youtube_url'] %}<a class="btn btn-outline btn-sm" href="{{ fr['youtube_url'] }}" target="_blank" rel="noopener">▶️ YouTube</a>{% endif %}
+      <a class="btn btn-primary btn-sm" href="{{ url_for('chat_page', other_id=fr['id']) }}">💬 Message</a>
+      {% if user['role'] == 'studio' %}
+        <button class="btn btn-outline btn-sm fav-btn {{ 'fav-on' if is_saved }}" data-fav-type="user" data-fav-id="{{ fr['id'] }}">⭐ Save freelancer</button>
+      {% endif %}
+    </div>
   </div>
 </section>
 

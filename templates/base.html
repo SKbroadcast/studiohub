@@ -7,7 +7,7 @@
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" type="image/png" sizes="48x48" href="{{ url_for('static', filename='icons/icon-48.png') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}">
-<meta name="theme-color" content="#050b1e">
+<meta name="theme-color" content="#101114">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;600;700&display=swap" rel="stylesheet">
@@ -26,12 +26,11 @@
         <div class="menu-user">{{ user['name'] }}<span class="menu-role">{{ 'Studio' if user['role']=='studio' else 'Freelancer' }}</span></div>
         {% if user['role'] == 'freelancer' %}
           <a href="{{ url_for('schedule_notes') }}">📅 Schedule notes</a>
-          <a href="{{ url_for('note_events_page') }}">📝 Note events</a>
           <a href="{{ url_for('browse_events') }}">🎯 Events</a>
           <a href="{{ url_for('freelancer_profile_edit') }}">👤 Profile</a>
         {% else %}
           <a href="{{ url_for('schedule_notes') }}">📅 Schedule notes</a>
-          <a href="{{ url_for('studio_home') }}#post">➕ Create event</a>
+          <a href="{{ url_for('studio_post_page') }}">➕ Create event</a>
           <a href="{{ url_for('studio_home') }}">📋 My events</a>
           <a href="{{ url_for('studio_profile') }}">👤 Profile</a>
         {% endif %}
@@ -58,6 +57,32 @@
 <footer class="footer">
   StudioHub — book your wedding crew in minutes
 </footer>
+
+{% if user %}
+<nav class="bottom-nav" aria-label="Main navigation">
+  {% if user['role'] == 'studio' %}
+    <a href="{{ url_for('studio_home') }}" class="{{ 'active' if request.path == '/studio' }}">
+      <span class="bn-ico">🏠</span><span class="bn-label">Home</span></a>
+    <a href="{{ url_for('creators') }}" class="{{ 'active' if request.path == '/creators' }}">
+      <span class="bn-ico">🔍</span><span class="bn-label">Explore</span></a>
+    <a href="{{ url_for('saved_page') }}" class="{{ 'active' if request.path == '/saved' }}">
+      <span class="bn-ico">⭐</span><span class="bn-label">Saved</span></a>
+  {% else %}
+    <a href="{{ url_for('freelancer_home') }}" class="{{ 'active' if request.path == '/freelancer' }}">
+      <span class="bn-ico">🏠</span><span class="bn-label">Home</span></a>
+    <a href="{{ url_for('browse_events') }}" class="{{ 'active' if request.path == '/events' }}">
+      <span class="bn-ico">🎯</span><span class="bn-label">Explore</span></a>
+    <a href="{{ url_for('saved_page') }}" class="{{ 'active' if request.path == '/saved' }}">
+      <span class="bn-ico">⭐</span><span class="bn-label">Saved</span></a>
+  {% endif %}
+  <a href="{{ url_for('messages_page') }}" class="{{ 'active' if request.path.startswith('/messages') }}">
+    <span class="bn-ico">💬{% if unread_msgs %}<span class="bn-badge">{{ unread_msgs }}</span>{% endif %}</span><span class="bn-label">Messages</span></a>
+  <a href="{{ url_for('studio_profile') if user['role'] == 'studio' else url_for('freelancer_profile_edit') }}"
+     class="{{ 'active' if request.path in ['/studio/profile', '/freelancer/profile'] }}">
+    <span class="bn-ico">👤</span><span class="bn-label">Profile</span></a>
+</nav>
+{% endif %}
+
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

@@ -1,14 +1,14 @@
 /* StudioHub — Dark-first B2B SaaS theme
-   Background: Deep Navy · Primary: Electric Blue · CTA: Studio Orange
-   Accent: Cyan · Cards: Navy Blue · Font: Inter + Noto Sans Tamil */
+   Background: Charcoal Black · Primary: Electric Blue · CTA: Studio Orange
+   Accent: Cyan · Cards: Grey · Font: Inter + Noto Sans Tamil */
 :root {
-  --bg: #050b1e;            /* deep navy background */
-  --bg2: #0a1330;
-  --card: #0d1a3d;          /* navy blue cards */
-  --card2: #142449;
-  --border: #1f2f5f;
-  --text: #e9eefc;
-  --muted: #8fa0c9;
+  --bg: #101114;            /* charcoal black background */
+  --bg2: #16181d;
+  --card: #1c1f25;          /* grey cards */
+  --card2: #242831;
+  --border: #2e333d;
+  --text: #f0f3f7;
+  --muted: #a0a7b2;
   --primary: #2f7bff;      /* electric blue */
   --primary-soft: #5ea0ff;
   --cta: #ff7a1a;           /* studio orange */
@@ -317,3 +317,125 @@ input[type="date"] { color-scheme: dark; }
 .bar-fill.alt { background: linear-gradient(90deg, var(--cta), var(--cta2)); }
 .bar-fill.alt2 { background: linear-gradient(90deg, #7c6fff, #b06fff); }
 .bar-val { font-size: .78rem; color: var(--text); text-align: right; }
+
+/* ---------- v15: bottom navigation (mobile) ---------- */
+.bottom-nav {
+  display: none;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  background: rgba(16, 17, 20, 0.97);
+  border-top: 1px solid var(--border);
+  padding: 0.35rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom));
+  justify-content: space-around;
+}
+.bottom-nav a {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  color: var(--dim); text-decoration: none; font-size: 0.62rem; font-weight: 600;
+  padding: 0.25rem 0.6rem; border-radius: 10px; min-width: 56px;
+}
+.bottom-nav a.active { color: var(--primary-soft); }
+.bottom-nav .bn-ico { font-size: 1.25rem; position: relative; line-height: 1.2; }
+.bottom-nav .bn-badge {
+  position: absolute; top: -4px; right: -12px;
+  background: var(--cta); color: #241000; font-size: 0.58rem; font-weight: 800;
+  border-radius: 999px; padding: 0 4px; line-height: 1.3;
+}
+@media (max-width: 900px) {
+  .bottom-nav { display: flex; }
+  body { padding-bottom: 66px; }
+}
+
+/* ---------- creator cards ---------- */
+.creator-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.creator-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.creator-photo {
+  display: block; height: 150px; background: var(--card2); position: relative;
+}
+.creator-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.creator-initial {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; font-weight: 800; color: var(--primary-soft);
+}
+.creator-info { padding: 0.8rem 0.9rem 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.creator-name-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.creator-name { color: var(--text); font-weight: 700; text-decoration: none; font-size: 1rem; }
+.creator-name:hover { color: var(--accent); }
+.creator-meta { color: var(--muted); font-size: 0.8rem; }
+.creator-actions { display: flex; gap: 0.5rem; margin-top: 0.35rem; align-items: center; }
+.fav-btn { min-width: 42px; }
+.fav-btn.fav-on { border-color: var(--cta); color: var(--cta2); background: rgba(255, 122, 26, 0.12); }
+
+/* ---------- conversations ---------- */
+.conv-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 0.75rem 0.9rem; margin-bottom: 0.55rem; text-decoration: none; color: var(--text);
+}
+.conv-row:hover { border-color: var(--accent); }
+.conv-row.unread { border-color: var(--primary); }
+.conv-avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex: none;
+  background: var(--card2); color: var(--primary-soft); font-weight: 800; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.conv-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.conv-name { font-weight: 700; font-size: 0.95rem; }
+.conv-last {
+  color: var(--muted); font-size: 0.82rem; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.conv-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; }
+.conv-time { color: var(--dim); font-size: 0.7rem; }
+
+/* ---------- chat ---------- */
+.chat-card { padding: 0.8rem; }
+.chat-box {
+  height: 55vh; min-height: 300px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.45rem; padding: 0.4rem;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+}
+.bubble {
+  max-width: 78%; padding: 0.5rem 0.8rem; border-radius: 14px;
+  font-size: 0.92rem; word-wrap: break-word; white-space: pre-wrap;
+  background: var(--card2); border: 1px solid var(--border); align-self: flex-start;
+}
+.bubble.me {
+  background: var(--primary); border-color: var(--primary); color: #fff; align-self: flex-end;
+}
+.bubble-time { display: block; font-size: 0.62rem; opacity: 0.65; margin-top: 0.15rem; }
+.chat-input { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+.chat-input input { flex: 1; margin: 0; }
+.chat-input .btn { flex: none; }
+.chat-day { text-align: center; color: var(--dim); font-size: 0.7rem; margin: 0.3rem 0; }
+
+/* ---------- booking summary ---------- */
+.summary-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.9rem; margin-top: 1rem; }
+.summary-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem;
+}
+.summary-box h3 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+.summary-box p { font-size: 0.88rem; margin-bottom: 0.25rem; }
+.summary-box .muted, .muted { color: var(--muted); }
+
+/* ---------- v17: golden bell ---------- */
+.nav-bell { color: #ffc94d; }
+.nav-bell:hover { filter: brightness(1.15); }
+.bell-badge { background: #ffc94d; color: #241a00; }
+
+/* ---------- v17: admin stat boxes clickable ---------- */
+a.stat { text-decoration: none; border: 1px solid var(--border); }
+a.stat:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+/* ---------- v17: studio calendar ---------- */
+.cal-cell.ev { background: rgba(255, 122, 26, 0.18); border-color: rgba(255, 122, 26, 0.55); color: var(--cta2); font-weight: 700; }
+.cal-cell.notev { background: rgba(47, 123, 255, 0.18); border-color: rgba(94, 160, 255, 0.55); color: var(--primary-soft); font-weight: 700; }
+.dot-ev { background: var(--cta); }
+.dot-note { background: var(--primary); }
+.crew-block { padding: 0.6rem 0; border-top: 1px dashed var(--border); }
+.crew-block:first-of-type { border-top: none; }

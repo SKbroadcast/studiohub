@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Saved{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>⭐ Saved</h1>
+    {% if user['role'] == 'studio' %}
+    <p>Your favorite freelancers — one tap to book again.</p>
+    {% else %}
+    <p>Events you starred — apply whenever you're ready.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% if user['role'] == 'studio' %}
+  {% if not freelancers %}
+    <div class="empty">No saved freelancers yet — find crew in <a href="{{ url_for('creators') }}">Explore</a> and tap ⭐ to save.</div>
+  {% endif %}
+  <div class="creator-grid">
+    {% for c in freelancers %}
+    <div class="creator-card">
+      <a href="{{ url_for('public_profile', user_id=c['id']) }}" class="creator-photo">
+        {% if c['photo_id'] %}
+          <img src="{{ url_for('portfolio_photo', photo_id=c['photo_id']) }}" alt="{{ c['name'] }}">
+        {% else %}
+          <span class="creator-initial">{{ c['name'][:1]|upper }}</span>
+        {% endif %}
+      </a>
+      <div class="creator-info">
+        <div class="creator-name-row">
+          <a href="{{ url_for('public_profile', user_id=c['id']) }}" class="creator-name">{{ c['name'] }}</a>
+        </div>
+        <div class="badges">
+          {% for s in c['skills'] %}<span class="badge badge-role">{{ role_label(s) }}</span>{% endfor %}
+        </div>
+        <div class="creator-meta">
+          {% if c['rcount'] %}{{ stars_str(c['avg']) }} {{ c['avg'] }}{% endif %}
+          {% if c['city'] %} · 📍 {{ c['city'] }}{% endif %}
+        </div>
+        <div class="creator-meta"><b>₹{{ c['rate'] or '—' }}</b>/day</div>
+        <div class="creator-actions">
+          <a class="btn btn-primary btn-sm" href="{{ url_for('public_profile', user_id=c['id']) }}">View & book</a>
+          <button class="btn btn-outline btn-sm fav-btn fav-on" data-fav-type="user" data-fav-id="{{ c['id'] }}" data-remove="1" title="Remove">⭐</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    <h2>🏢 Saved studios</h2>
+    {% if not studios %}
+      <div class="empty">No saved studios yet — open a studio name in any event and tap "⭐ Save studio".</div>
+    {% endif %}
+    {% for st in studios %}
+      <div class="event-card">
+        <div class="event-head">
+          <div>
+            <a class="event-title" href="{{ url_for('studio_public', user_id=st['id']) }}">{{ st['name'] }} ↗</a>
+            <div class="event-meta">Studio{% if st['phone'] %} · 📞 {{ st['phone'] }}{% endif %}</div>
+          </div>
+          <button class="btn btn-outline btn-xs fav-btn fav-on" data-fav-type="user" data-fav-id="{{ st['id'] }}" data-remove="1" title="Remove">⭐</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if not events %}
+    <div class="empty">No saved events yet — tap ⭐ on an event to save it here.</div>
+  {% endif %}
+  <div class="card">
+    {% for ev in events %}
+      <div class="event-card">
+        <div class="event-head">
+          <div>
+            <a class="event-title" href="{{ url_for('event_detail', event_id=ev['id']) }}">{{ ev['title'] }}</a>
+            <div class="event-meta">🏢 {{ ev['studio_name'] }} · 📍 {{ ev['location'] or 'location TBD' }}{% if ev['district'] %} · 🗺 {{ ev['district'] }}{% endif %}</div>
+          </div>
+          <div class="event-actions" style="margin:0;align-items:center">
+            <div class="date-chip"><b>{{ event_date_str(ev) }}</b></div>
+            <button class="btn btn-outline btn-xs fav-btn fav-on" data-fav-type="event" data-fav-id="{{ ev['id'] }}" data-remove="1" title="Remove">⭐</button>
+          </div>
+        </div>
+        <div class="badges">
+          {% for role in ev['roles'] %}
+            <span class="badge badge-role">{{ role['label'] }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

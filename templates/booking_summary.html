@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Booking Summary{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>🎬 Booking summary</h1>
+    <p>All the details of this booking in one place.</p>
+  </div>
+</section>
+
+<div class="card">
+  <div class="summary-head">
+    <div>
+      <h2 style="margin-bottom:.2rem">{{ b['title'] }}</h2>
+      <div class="badges">
+        <span class="badge {{ 'badge-ok' if b['status'] == 'booked' else 'badge-wait' }}">{{ b['status']|capitalize }}</span>
+        <span class="badge badge-role">{{ b['role'] }}</span>
+      </div>
+    </div>
+    <div class="date-chip" style="font-size:1rem"><b>{{ b['date_str'] }}</b></div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-box">
+      <h3>📅 Event</h3>
+      <p><span class="muted">Dates:</span> {{ b['date_str'] }}</p>
+      <p><span class="muted">Location:</span> {{ b['location'] or '—' }}</p>
+      <p><span class="muted">District:</span> {{ b['district'] or '—' }}</p>
+      {% if b['details'] %}<p><span class="muted">Details:</span> {{ b['details'] }}</p>{% endif %}
+    </div>
+    <div class="summary-box">
+      <h3>🤝 Crew</h3>
+      <p><span class="muted">Role:</span> {{ b['role'] }}</p>
+      <p><span class="muted">Freelancer:</span> {{ b['freelancer_name'] }}</p>
+      <p><span class="muted">Phone:</span>
+        {% if b['freelancer_phone'] %}<a href="tel:{{ b['freelancer_phone'] }}">{{ b['freelancer_phone'] }} 📞</a>{% else %}—{% endif %}
+      </p>
+      <p><span class="muted">Studio:</span> {{ b['studio_name'] }}</p>
+      <p><span class="muted">Studio phone:</span>
+        {% if b['studio_phone'] %}<a href="tel:{{ b['studio_phone'] }}">{{ b['studio_phone'] }} 📞</a>{% else %}—{% endif %}
+      </p>
+    </div>
+    <div class="summary-box">
+      <h3>💰 Payment</h3>
+      <p><span class="muted">Rate:</span> <b>₹{{ b['rate'] or '—' }}</b>/day</p>
+      {% if b['advance_amount'] %}
+        <p><span class="muted">Advance:</span> ₹{{ b['advance_amount'] }} —
+          {% if b['advance_paid'] %}<span class="badge badge-ok">✅ Paid</span>
+          {% else %}<span class="badge badge-wait">⏳ Pending</span>{% endif %}
+        </p>
+        {% if not b['advance_paid'] and b['upi_id'] and user['role'] == 'studio' %}
+          <a class="btn btn-primary btn-sm" style="margin-top:.4rem"
+             href="upi://pay?pa={{ b['upi_id'] }}&pn={{ b['freelancer_name'] }}&am={{ b['advance_amount'] }}&cu=INR&tn=StudioHub {{ b['title'] }}">📱 Pay advance via UPI</a>
+        {% endif %}
+      {% else %}
+        <p class="muted">No advance set for this booking.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="event-actions" style="margin-top:1rem">
+    {% if user['role'] == 'studio' %}
+      <a class="btn btn-outline btn-sm" href="{{ url_for('event_detail', event_id=b['event_id']) }}">← Back to event</a>
+      <a class="btn btn-outline btn-sm" href="{{ url_for('schedule_notes') }}">📅 My schedule</a>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('chat_page', other_id=b['freelancer_id']) }}">💬 Message {{ b['freelancer_name'] }}</a>
+    {% else %}
+      <a class="btn btn-outline btn-sm" href="{{ url_for('schedule_notes') }}">← My schedule</a>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('chat_page', other_id=b['studio_id']) }}">💬 Message {{ b['studio_name'] }}</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

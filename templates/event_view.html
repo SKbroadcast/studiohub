@@ -5,7 +5,7 @@
 <section class="page-head">
   <div>
     <h1>{{ ev['title'] }}</h1>
-    <p>📅 {{ event_date_str(ev) }} · 📍 {{ ev['location'] or 'location TBD' }} · 🏢 {{ ev['studio_name'] }}</p>
+    <p>📅 {{ event_date_str(ev) }} · 📍 {{ ev['location'] or 'location TBD' }} · 🏢 <a href="{{ url_for('studio_public', user_id=ev['studio_id']) }}" style="color:var(--primary-soft)">{{ ev['studio_name'] }}</a></p>
     {% if ev['details'] %}<p class="hint">{{ ev['details'] }}</p>{% endif %}
     <span class="badge {{ 'badge-dim' if ev['status'] == 'closed' else 'badge-ok' }}">{{ ev['status']|capitalize }}</span>
   </div>

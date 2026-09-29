@@ -149,3 +149,28 @@ running on your own computer.
 ## v14 — Render deploy fix
 - PostgreSQL startup crash fixed: a failed migration no longer leaves the
   connection in "aborted transaction" state (auto-rollback + commit after schema).
+
+## v15 — mobile app UI
+- Bottom navigation (mobile): Home / Explore / Saved / Messages / Profile
+- Find creators page (/creators): search by name or city, filter by skill,
+  max price and rating; creator cards with photo, rating, price and PRO badge
+- Saved (star): studios save favorite freelancers, freelancers save events
+- Booking summary page (/booking/<id>): event, crew, payment, UPI, call links
+- Messages: direct chat between studio & freelancer with unread badges
+  (also bell notification on new message)
+
+## v16 — charcoal black theme
+- Background switched from deep navy to charcoal black (mockup style)
+- Cards are neutral grey now; electric blue / orange / cyan accents unchanged
+
+## v17 — corrections + staff admins
+- Landing tagline now white; bell + badge golden
+- Admin: dashboard stat boxes clickable; Users filter (studio/freelancer);
+  Events filter (status + district); super admin can create STAFF admin
+  accounts with chosen section access (dashboard/users/events/bookings)
+- Studio: dedicated Create event page (menu only), event calendar on home with
+  noted events, "crew free on my upcoming events" list, My events with Copy
+- Studio can note outside-app events in Schedule notes (freelancer note list
+  merged there too — Note events removed from freelancer menu)
+- Studio public profile /s/<id> — freelancers can save studios
+- Both roles: Instagram + YouTube links in profile, shown as buttons

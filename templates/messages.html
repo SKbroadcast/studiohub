@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<section class="page-head">
+  <div>
+    <h1>💬 Messages</h1>
+    <p>Your conversations with studios and freelancers.</p>
+  </div>
+</section>
+
+<div class="card">
+  {% if not convs %}
+    <div class="empty">No conversations yet.<br>Open a profile or booking and tap "💬 Message" to start one.</div>
+  {% endif %}
+  {% for c in convs %}
+    <a class="conv-row {{ 'unread' if c['unread'] }}" href="{{ url_for('chat_page', other_id=c['user_id']) }}">
+      <span class="conv-avatar">{{ c['name'][:1]|upper }}</span>
+      <span class="conv-body">
+        <span class="conv-name">{{ c['name'] }} <span class="hint">{{ 'Studio' if c['role'] == 'studio' else 'Freelancer' }}</span></span>
+        <span class="conv-last">{{ c['last'] }}</span>
+      </span>
+      <span class="conv-side">
+        {% if c['unread'] %}<span class="badge badge-hot">{{ c['unread'] }}</span>{% endif %}
+        <span class="conv-time">{{ c['last_time'] }}</span>
+      </span>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

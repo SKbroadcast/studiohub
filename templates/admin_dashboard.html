@@ -3,11 +3,11 @@
 <div class="page-head"><h1>📊 Admin Dashboard</h1><p>Overall control of StudioHub</p></div>
 
 <div class="stat-grid">
-  <div class="stat"><b>{{ stats.users }}</b><span>Total users</span></div>
-  <div class="stat"><b>{{ stats.studios }}</b><span>Studios</span></div>
-  <div class="stat"><b>{{ stats.freelancers }}</b><span>Freelancers</span></div>
-  <div class="stat"><b>{{ stats.events }}</b><span>Events ({{ stats.open_events }} open)</span></div>
-  <div class="stat"><b>{{ stats.bookings }}</b><span>Bookings ({{ stats.confirmed }} confirmed)</span></div>
+  <a class="stat" href="{{ url_for('admin_users') }}"><b>{{ stats.users }}</b><span>Total users</span></a>
+  <a class="stat" href="{{ url_for('admin_users', role='studio') }}"><b>{{ stats.studios }}</b><span>Studios</span></a>
+  <a class="stat" href="{{ url_for('admin_users', role='freelancer') }}"><b>{{ stats.freelancers }}</b><span>Freelancers</span></a>
+  <a class="stat" href="{{ url_for('admin_events') }}"><b>{{ stats.events }}</b><span>Events ({{ stats.open_events }} open)</span></a>
+  <a class="stat" href="{{ url_for('admin_bookings') }}"><b>{{ stats.bookings }}</b><span>Bookings ({{ stats.confirmed }} confirmed)</span></a>
 </div>
 
 <div class="card">
